@@ -21,3 +21,9 @@ type Comment struct {
 	Email  string `json:"email" xml:"email"`
 	Body   string `json:"body" xml:"body"`
 }
+
+type User struct {
+	gorm.Model
+	Email    string `json:"email" xml:"email"`
+	Password string `json:"password"`
+}
