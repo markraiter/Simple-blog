@@ -5,6 +5,7 @@ import "gorm.io/gorm"
 type Models struct {
 	Post    Post
 	Comment Comment
+	User User
 }
 
 type Post struct {
