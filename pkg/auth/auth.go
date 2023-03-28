@@ -55,7 +55,7 @@ func Register(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, user)
+		return c.JSON(http.StatusCreated, user)
 	}
 }
 
