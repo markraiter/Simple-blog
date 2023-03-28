@@ -1,8 +1,6 @@
 package app
 
 import (
-	"log"
-
 	"github.com/labstack/echo/v4"
 	"github.com/markraiter/simple-blog/internal/initializers"
 	"github.com/markraiter/simple-blog/pkg/auth"
@@ -17,23 +15,37 @@ func init() {
 func Start() {
 	e := echo.New()
 
+	// Groups
+	// authGroup := e.Group("/api")
+	// authGroup.Use(middlewares.JWTMiddleware)
+	// postGroup := authGroup.Group("/v1/posts")
+	// commentsGroup := authGroup.Group("/v1/comments")
+
+	// Test handler
 	e.GET("/", handlers.Hello)
 
+	// Registration
 	e.POST("/registration", auth.Register(initializers.DB))
+
+	// Authentification
 	e.POST("/login", auth.Login(initializers.DB))
 
-	// e.GET("/posts", handlers.GetPosts(initializers.DB))
-	// e.GET("/posts:id", handlers.GetPost(initializers.DB))
-	// e.POST("/posts", handlers.CreatePost(initializers.DB))
-	// e.PUT("/posts:id", handlers.UpdatePost(initializers.DB))
-	// e.DELETE("/posts:id", handlers.DeletePost(initializers.DB))
+	////////////////////ENDPOINTS////////////////////
 
-	// e.GET("/comments", handlers.GetComments(initializers.DB))
-	// e.GET("/comments:id", handlers.GetComment(initializers.DB))
-	// e.POST("/comments", handlers.CreateComment(initializers.DB))
-	// e.PUT("/comments:id", handlers.UpdateComment(initializers.DB))
-	// e.DELETE("/comments:id", handlers.DeleteComment(initializers.DB))
+	// Operations with posts
+	// postGroup.GET("", handlers.GetPosts(initializers.DB))
+	// postGroup.GET(":id", handlers.GetPost(initializers.DB))
+	// postGroup.POST("", handlers.CreatePost(initializers.DB))
+	// postGroup.PUT(":id", handlers.UpdatePost(initializers.DB))
+	// postGroup.DELETE(":id", handlers.DeletePost(initializers.DB))
 
-	log.Fatal(e.Start(":8080"))
+	// Operations with comments
+	// commentsGroup.GET("", handlers.GetComments(initializers.DB))
+	// commentsGroup.GET(":id", handlers.GetComment(initializers.DB))
+	// commentsGroup.POST("", handlers.CreateComment(initializers.DB))
+	// commentsGroup.PUT(":id", handlers.UpdateComment(initializers.DB))
+	// commentsGroup.DELETE(":id", handlers.DeleteComment(initializers.DB))
+
+	e.Logger.Fatal(e.Start(":8080"))
 
 }
