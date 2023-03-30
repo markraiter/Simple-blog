@@ -39,7 +39,7 @@ func GetPosts(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-// Getting post by ID HERER IS A BUG! THE FUNCTIONS RETURNS ALL THE POSTS
+// Getting post by ID 
 func GetPost(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		postID, err := strconv.Atoi(c.Param("id"))
