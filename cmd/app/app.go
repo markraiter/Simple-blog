@@ -33,8 +33,8 @@ func Start() {
 	////////////////////ENDPOINTS////////////////////
 
 	// Operations with posts
-	// postGroup.GET("", handlers.GetPosts(initializers.DB))
-	// postGroup.GET(":id", handlers.GetPost(initializers.DB))
+	e.GET("/posts", handlers.GetPosts(initializers.DB))
+	e.GET("/posts:id", handlers.GetPost(initializers.DB))
 	// postGroup.POST("", handlers.CreatePost(initializers.DB))
 	// postGroup.PUT(":id", handlers.UpdatePost(initializers.DB))
 	// postGroup.DELETE(":id", handlers.DeletePost(initializers.DB))

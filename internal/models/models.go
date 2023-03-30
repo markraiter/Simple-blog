@@ -2,12 +2,6 @@ package models
 
 import "gorm.io/gorm"
 
-type Models struct {
-	Post    Post
-	Comment Comment
-	User User
-}
-
 type Post struct {
 	gorm.Model
 	UserID int    `json:"userId" xml:"userId"`
