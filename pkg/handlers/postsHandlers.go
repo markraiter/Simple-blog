@@ -40,7 +40,7 @@ func GetPosts(db *gorm.DB) echo.HandlerFunc {
 }
 
 // Getting post by ID 
-func GetPost(db *gorm.DB) echo.HandlerFunc {
+func GetPostByID(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		postID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {

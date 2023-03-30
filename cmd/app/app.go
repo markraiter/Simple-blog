@@ -34,14 +34,14 @@ func Start() {
 
 	// Operations with posts
 	e.GET("/posts", handlers.GetPosts(initializers.DB))
-	e.GET("/posts/:id", handlers.GetPost(initializers.DB))
+	e.GET("/posts/:id", handlers.GetPostByID(initializers.DB))
 	// e.POST("/posts", handlers.CreatePost(initializers.DB))
 	// e.PUT("/posts/:id", handlers.UpdatePost(initializers.DB))
 	// e.DELETE("/posts/:id", handlers.DeletePost(initializers.DB))
 
 	// Operations with comments
 	// e.GET("/comments", handlers.GetComments(initializers.DB))
-	// e.GET("/comments/:id", handlers.GetComment(initializers.DB))
+	// e.GET("/comments/:id", handlers.GetCommentByID(initializers.DB))
 	// e.POST("/comments", handlers.CreateComment(initializers.DB))
 	// e.PUT("/comments/:id", handlers.UpdateComment(initializers.DB))
 	// e.DELETE("/cpmments/:id", handlers.DeleteComment(initializers.DB))
