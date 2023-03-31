@@ -39,7 +39,7 @@ func GetPosts(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-// Getting post by ID 
+// Getting post by ID
 func GetPostByID(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		postID, err := strconv.Atoi(c.Param("id"))
@@ -82,7 +82,7 @@ func UpdatePost(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		post := new(models.Post)
-		
+
 		if err := db.First(post, postID).Error; err != nil {
 			return c.String(http.StatusNotFound, "post not found")
 		}
