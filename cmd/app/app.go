@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/markraiter/simple-blog/cmd/migrate"
 	"github.com/markraiter/simple-blog/internal/initializers"
 	"github.com/markraiter/simple-blog/pkg/auth"
 	"github.com/markraiter/simple-blog/pkg/handlers"
@@ -10,6 +11,7 @@ import (
 func init() {
 	initializers.LoadEnvVariables()
 	initializers.ConnectToDB()
+	migrate.Migrate()
 }
 
 func Start() {
