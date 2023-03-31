@@ -37,9 +37,9 @@ func Start() {
 	// Operations with posts
 	e.GET("/posts", handlers.GetPosts(initializers.DB))
 	e.GET("/posts/:id", handlers.GetPostByID(initializers.DB))
-	// e.POST("/posts", handlers.CreatePost(initializers.DB))
-	// e.PUT("/posts/:id", handlers.UpdatePost(initializers.DB))
-	// e.DELETE("/posts/:id", handlers.DeletePost(initializers.DB))
+	e.POST("/posts", handlers.CreatePost(initializers.DB))
+	e.PUT("/posts/:id", handlers.UpdatePost(initializers.DB))
+	e.DELETE("/posts/:id", handlers.DeletePost(initializers.DB))
 
 	// Operations with comments
 	// e.GET("/comments", handlers.GetComments(initializers.DB))

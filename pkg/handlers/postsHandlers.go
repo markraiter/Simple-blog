@@ -55,3 +55,68 @@ func GetPostByID(db *gorm.DB) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, post)
 	}
 }
+
+// Creating post
+func CreatePost(db *gorm.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		post := new(models.Post)
+
+		if err := c.Bind(post); err != nil {
+			return c.String(http.StatusBadRequest, "invalid post data")
+		}
+
+		if err := db.Create(post).Error; err != nil {
+			return c.String(http.StatusInternalServerError, "error creating post")
+		}
+
+		return c.JSON(http.StatusOK, post)
+	}
+}
+
+// Updating post
+func UpdatePost(db *gorm.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		postID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.String(http.StatusBadRequest, "invalid post id")
+		}
+
+		post := new(models.Post)
+		
+		if err := db.First(post, postID).Error; err != nil {
+			return c.String(http.StatusNotFound, "post not found")
+		}
+
+		if err := c.Bind(post); err != nil {
+			return c.String(http.StatusBadRequest, "invalid post data")
+		}
+
+		if err := db.Save(post).Error; err != nil {
+			return c.String(http.StatusInternalServerError, "error updating post")
+		}
+
+		return c.JSON(http.StatusOK, post)
+	}
+}
+
+// Deleting post
+func DeletePost(db *gorm.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		postID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.String(http.StatusBadRequest, "invalid posy id")
+		}
+
+		post := new(models.Post)
+
+		if err := db.First(post, postID).Error; err != nil {
+			return c.String(http.StatusNotFound, "post not found")
+		}
+
+		if err := db.Delete(post).Error; err != nil {
+			return c.String(http.StatusInternalServerError, "error deleting post")
+		}
+
+		return c.NoContent(http.StatusNoContent)
+	}
+}
