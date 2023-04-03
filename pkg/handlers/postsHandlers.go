@@ -48,6 +48,7 @@ func GetPostByID(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		post := new(models.Post)
+
 		if err := db.First(post, postID).Error; err != nil {
 			return c.String(http.StatusNotFound, "post not found")
 		}
@@ -69,7 +70,7 @@ func CreatePost(db *gorm.DB) echo.HandlerFunc {
 			return c.String(http.StatusInternalServerError, "error creating post")
 		}
 
-		return c.JSON(http.StatusOK, post)
+		return c.JSON(http.StatusCreated, post)
 	}
 }
 
@@ -104,7 +105,7 @@ func DeletePost(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		postID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			return c.String(http.StatusBadRequest, "invalid posy id")
+			return c.String(http.StatusBadRequest, "invalid post id")
 		}
 
 		post := new(models.Post)

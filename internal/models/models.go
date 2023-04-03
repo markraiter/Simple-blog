@@ -20,5 +20,5 @@ type Comment struct {
 type User struct {
 	gorm.Model
 	Email    string `json:"email" xml:"email"`
-	Password string `json:"password"`
+	Password string `json:"password" xml:"password"`
 }
