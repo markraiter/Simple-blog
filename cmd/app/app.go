@@ -6,6 +6,7 @@ import (
 	"github.com/markraiter/simple-blog/internal/initializers"
 	"github.com/markraiter/simple-blog/pkg/auth"
 	"github.com/markraiter/simple-blog/pkg/handlers"
+	"github.com/markraiter/simple-blog/pkg/middlewares"
 )
 
 func init() {
@@ -19,10 +20,10 @@ func Start() {
 
 	//////////////////// Groups ////////////////////
 
-	// authGroup := e.Group("/api")
-	// authGroup.Use(middlewares.JWTMiddleware)
-	// postGroup := authGroup.Group("/v1/posts")
-	// commentsGroup := authGroup.Group("/v1/comments")
+	authGroup := e.Group("/api")
+	authGroup.Use(middlewares.JWTMiddleware)
+	postGroup := authGroup.Group("/v1/posts")
+	commentsGroup := authGroup.Group("/v1/comments")
 
 	//////////////////// ENDPOINTS ////////////////////
 
@@ -33,18 +34,18 @@ func Start() {
 	e.POST("/login", auth.Login(initializers.DB))
 
 	// Operations with posts
-	e.GET("/posts", handlers.GetPosts(initializers.DB))
-	e.GET("/posts/:id", handlers.GetPostByID(initializers.DB))
-	e.POST("/posts", handlers.CreatePost(initializers.DB))
-	e.PUT("/posts/:id", handlers.UpdatePost(initializers.DB))
-	e.DELETE("/posts/:id", handlers.DeletePost(initializers.DB))
+	postGroup.GET("", handlers.GetPosts(initializers.DB))
+	postGroup.GET("/:id", handlers.GetPostByID(initializers.DB))
+	postGroup.POST("", handlers.CreatePost(initializers.DB))
+	postGroup.PUT("/:id", handlers.UpdatePost(initializers.DB))
+	postGroup.DELETE("/:id", handlers.DeletePost(initializers.DB))
 
 	// Operations with comments
-	e.GET("/comments", handlers.GetComments(initializers.DB))
-	e.GET("/comments/:id", handlers.GetCommentByID(initializers.DB))
-	e.POST("/comments", handlers.CreateComment(initializers.DB))
-	e.PUT("/comments/:id", handlers.UpdateComment(initializers.DB))
-	e.DELETE("/comments/:id", handlers.DeleteComment(initializers.DB))
+	commentsGroup.GET("", handlers.GetComments(initializers.DB))
+	commentsGroup.GET("/:id", handlers.GetCommentByID(initializers.DB))
+	commentsGroup.POST("", handlers.CreateComment(initializers.DB))
+	commentsGroup.PUT("/:id", handlers.UpdateComment(initializers.DB))
+	commentsGroup.DELETE("/:id", handlers.DeleteComment(initializers.DB))
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
