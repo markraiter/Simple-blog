@@ -8,9 +8,19 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/markraiter/simple-blog/internal/models"
 	"gorm.io/gorm"
+	_ "github.com/markraiter/simple-blog/docs"
 )
 
-// Getting all posts
+// @Summary Get all posts
+// @Description Get all posts from the database.
+// @Tags Posts
+// @Accept  json
+// @Produce  json
+// @Produce  xml
+// @Security ApiKeyAuth
+// @Success 200 {array} models.Post
+// @Failure 500 {string} error fetching post
+// @Router /api/v1/posts [get]
 func GetPosts(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		responseType := c.QueryParam("type")
@@ -39,7 +49,17 @@ func GetPosts(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-// Getting post by ID
+// @Summary Get post by ID
+// @Description Get particular post from the database by unique ID
+// @Tags Posts
+// @Accept json
+// @Produce json
+// @Param id path int true "Post ID"
+// @Security ApiKeyAuth
+// @Success 200 {object} models.Post
+// @Failure 400 {string} invalid post ID
+// @Failure 404 {string} post not found
+// @Router /api/v1/posts/{id} [get] 
 func GetPostByID(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		postID, err := strconv.Atoi(c.Param("id"))
@@ -57,7 +77,17 @@ func GetPostByID(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-// Creating post
+// @Summary Create post
+// @Description Create new post in the database
+// @Tags Posts
+// @Accept json
+// @Produce json
+// @Param post body models.Post true "Post data"
+// @Security ApiKeyAuth
+// @Success 201 {object} models.Post
+// @Failure 400 {string} invalid post data
+// @Failure 500 {string} error creating post
+// @Router /api/v1/posts [post]
 func CreatePost(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		post := new(models.Post)
@@ -74,7 +104,19 @@ func CreatePost(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-// Updating post
+// @Summary Update post
+// @Description Update information in the particular post from the database by unique ID
+// @Tags Posts
+// @Accept json
+// @Produce json
+// @Param id path int true "Post ID"
+// @Param post body models.Post true "Post data"
+// @Security ApiKeyAuth
+// @Success 200 {object} models.Post
+// @Failure 400 {string} invalid post data
+// @Failure 404 {string} post not found
+// @Failure 500 {string} error updating post
+// @Router /api/v1/posts/{id} [put]
 func UpdatePost(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		postID, err := strconv.Atoi(c.Param("id"))
@@ -100,7 +142,17 @@ func UpdatePost(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-// Deleting post
+// @Summary Delete post
+// @Description Delete particular post from the database by unique ID
+// @Tags Posts
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 204 {string} post deleted successfully
+// @Failure 400 {string} invalid post ID
+// @Failure 404 {string} post not found
+// @Failure 500 {string} error deleting post
+// @Router /api/v1/posts/{id} [delete]
 func DeletePost(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		postID, err := strconv.Atoi(c.Param("id"))

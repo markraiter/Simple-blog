@@ -2,11 +2,13 @@ package app
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/swaggo/echo-swagger"
 	"github.com/markraiter/simple-blog/cmd/migrate"
 	"github.com/markraiter/simple-blog/internal/initializers"
 	"github.com/markraiter/simple-blog/pkg/auth"
 	"github.com/markraiter/simple-blog/pkg/handlers"
 	"github.com/markraiter/simple-blog/pkg/middlewares"
+	_ "github.com/markraiter/simple-blog/docs"
 )
 
 func init() {
@@ -15,8 +17,21 @@ func init() {
 	migrate.Migrate()
 }
 
+// @title Simple Blog Project REST API Swagger Example
+// @version 1.0
+// @description This is a simple blog project for practicing go REST API.
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
 func Start() {
 	e := echo.New()
+
+	// Serve the Swagger docs
+	swagHandler := echoSwagger.WrapHandler
+	e.GET("/swagger/*", swagHandler)
 
 	//////////////////// Groups ////////////////////
 

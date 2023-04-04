@@ -9,6 +9,7 @@ import (
 	"github.com/markraiter/simple-blog/internal/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	_ "github.com/markraiter/simple-blog/docs"
 )
 
 func generateToken(u *models.User) (string, error) {
@@ -30,6 +31,16 @@ func generateToken(u *models.User) (string, error) {
 	return tokenString, nil
 }
 
+// @Summary Create a new user account
+// @Tags Authentification
+// @Description Register a new user account
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User object"
+// @Success 200 {object} models.User
+// @Failure 400 {object} error "Bad request"
+// @Failure 500 {object} error "Internal server error"
+// @Router /registration [post]
 func Register(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		user := new(models.User)
@@ -59,6 +70,17 @@ func Register(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
+// @Summary Login
+// @Tags Authentification
+// @Description Logs in user with email and password
+// @Accept  json
+// @Produce  json
+// @Param user body models.User true "User object"
+// @Success 200 {string} string "token"
+// @Failure 400 {object} error "Bad request"
+// @Failure 401 {object} error "Unauthorized"
+// @Failure 500 {object} error "Internal server error"
+// @Router /login [post]
 func Login(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		user := new(models.User)
