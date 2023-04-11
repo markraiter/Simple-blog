@@ -1,6 +1,6 @@
 # REST API for simple blog (NIX Academy Trainee level task)
 
-###The task:
+### The task:
 
 * Receiving from the service [JSONPlaceholder](https://jsonplaceholder.typicode.com) posts with userid=7, and receiving comments from these posts with postId={postId} using package [net/http](https://pkg.go.dev/net/http);
 
@@ -14,7 +14,7 @@
 
 * Writing tests for the API, using the standard library for testing - [testing](https://pkg.go.dev/testing).
 
-###Tech stack:
+### Tech stack:
 
 * Go;
 * Echo Framework;
