@@ -14,7 +14,7 @@
 
 * Writing tests for the API, using the standard library for testing - [testing](https://pkg.go.dev/testing).
 
-###Technology stack:
+###Tech stack:
 
 * Go;
 * Echo Framework;
@@ -24,3 +24,5 @@
 * JWT; 
 * Swagger; 
 * Git.
+
+> To see swagger docs please proceed this link: [swagger](http://localhost:8080/swagger/index.html)
