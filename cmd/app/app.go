@@ -1,25 +1,20 @@
 package app
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/swaggo/echo-swagger"
-	"github.com/markraiter/simple-blog/cmd/migrate"
-	"github.com/markraiter/simple-blog/internal/initializers"
-	"github.com/markraiter/simple-blog/pkg/auth"
-	"github.com/markraiter/simple-blog/pkg/handlers"
-	"github.com/markraiter/simple-blog/pkg/middlewares"
-	_ "github.com/markraiter/simple-blog/docs"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/markraiter/simple-blog/cmd/server"
+	"github.com/markraiter/simple-blog/pkg/handler"
+	"github.com/markraiter/simple-blog/pkg/repository"
+	"github.com/markraiter/simple-blog/pkg/service"
+	"github.com/spf13/viper"
 )
 
-func init() {
-	initializers.LoadEnvVariables()
-	initializers.ConnectToDB()
-	migrate.Migrate()
-}
-
-// @title Simple Blog Project REST API Swagger Example
+// @title REST API for Simple Blog Swagger Example
 // @version 1.0
-// @description This is a simple blog project for practicing go REST API.
+// @description This is a simple blog project for practicing Go REST API.
 // @host localhost:8080
 // @BasePath /
 // @securityDefinitions.apikey ApiKeyAuth
@@ -27,40 +22,38 @@ func init() {
 // @name Authorization
 
 func Start() {
-	e := echo.New()
 
-	// Serve the Swagger docs
-	swagHandler := echoSwagger.WrapHandler
-	e.GET("/swagger/*", swagHandler)
+	err := godotenv.Load()
 
-	//////////////////// Groups ////////////////////
+	if err != nil {
+		log.Fatalf("failed to load environment variables: %s/n", err.Error())
+	}
 
-	authGroup := e.Group("/api")
-	authGroup.Use(middlewares.JWTMiddleware)
-	postGroup := authGroup.Group("/v1/posts")
-	commentsGroup := authGroup.Group("/v1/comments")
+	// Initializing Database
+	db, err := repository.NewMySQLDB(repository.Config{
+		Driver:     viper.GetString("db.driver"),
+		Username:   viper.GetString("db.username"),
+		Connection: viper.GetString("db.connection"),
+		Host:       viper.GetString("db.host"),
+		Port:       viper.GetString("db.port"),
+		DBName:     viper.GetString("db.dbname"),
+		Password:   os.Getenv("DB_PASS"),
+	})
 
-	//////////////////// ENDPOINTS ////////////////////
+	if err != nil {
+		log.Fatalf("error initializing database: %s\n", err.Error())
+	}
 
-	// Registration
-	e.POST("/registration", auth.Register(initializers.DB))
+	repos := repository.NewRepository(db)
+	services := service.NewService(repos)
+	handlers := handler.NewHandler(services)
 
-	// Authentification
-	e.POST("/login", auth.Login(initializers.DB))
+	server := new(server.Server)
+	go func() {
+		if err := server.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
+			log.Fatalf("error ocured while running http server: %s\n", err.Error())
+		}
+	}()
 
-	// Operations with posts
-	postGroup.GET("", handlers.GetPosts(initializers.DB))
-	postGroup.GET("/:id", handlers.GetPostByID(initializers.DB))
-	postGroup.POST("", handlers.CreatePost(initializers.DB))
-	postGroup.PUT("/:id", handlers.UpdatePost(initializers.DB))
-	postGroup.DELETE("/:id", handlers.DeletePost(initializers.DB))
-
-	// Operations with comments
-	commentsGroup.GET("", handlers.GetComments(initializers.DB))
-	commentsGroup.GET("/:id", handlers.GetCommentByID(initializers.DB))
-	commentsGroup.POST("", handlers.CreateComment(initializers.DB))
-	commentsGroup.PUT("/:id", handlers.UpdateComment(initializers.DB))
-	commentsGroup.DELETE("/:id", handlers.DeleteComment(initializers.DB))
-
-	e.Logger.Fatal(e.Start(":8080"))
+	log.Print("Blog Started...")
 }

@@ -1,0 +1,10 @@
+port:
+  "8080"
+
+db:
+  driver: "mysql"
+  username: "root"
+  connection: "tcp"
+  host: "db"
+  port: "3306"
+  dbname: "simple-blog"
