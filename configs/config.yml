@@ -5,6 +5,6 @@ db:
   driver: "mysql"
   username: "root"
   connection: "tcp"
-  host: "db"
+  host: "localhost"
   port: "3306"
   dbname: "simple-blog"
