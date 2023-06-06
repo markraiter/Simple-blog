@@ -12,9 +12,11 @@ type Authorization interface {
 }
 
 type Posts interface {
+	Create(userID int, post models.Post) (int, error)
 }
 
 type Comments interface {
+	Create(postID int, comment models.Comment) (int, error)
 }
 
 type Repository struct {
@@ -26,5 +28,6 @@ type Repository struct {
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthMySQL(db),
+		Posts:         NewPostMySQL(db),
 	}
 }

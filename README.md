@@ -20,9 +20,18 @@
 * Echo Framework;
 * REST; 
 * MySQL; 
-* GORM; 
+* Golang-Migrate;
 * JWT; 
+* Docker;
 * Swagger; 
 * Git.
 
 > To see swagger docs please proceed this link: [swagger](http://localhost:8080/swagger/index.html)
+
+> To make migrations please use next:
+
+```migrate -database "mysql://root:qwerty@tcp(localhost:3306)/simple-blog" -path ./ up```
+
+> To roll back migrations please use next:
+
+```migrate -database "mysql://root:qwerty@tcp(localhost:3306)/simple-blog" -path ./ down```

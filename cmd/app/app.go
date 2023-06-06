@@ -1,8 +1,11 @@
 package app
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/joho/godotenv"
 	"github.com/markraiter/simple-blog/cmd/server"
@@ -22,6 +25,10 @@ import (
 // @name Authorization
 
 func Start() {
+
+	if err := initConfig(); err != nil {
+		log.Fatalf("error initializing configs: %s", err.Error())
+	}
 
 	err := godotenv.Load()
 
@@ -56,4 +63,24 @@ func Start() {
 	}()
 
 	log.Print("Blog Started...")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	<-quit
+
+	log.Print("Blog Shutting Down")
+
+	if err := server.Shotdown(context.Background()); err != nil {
+		log.Printf("error occured on server shutting down: %s", err.Error())
+	}
+
+	if err := db.Close(); err != nil {
+		log.Printf("error occured on db connection close: %s", err.Error())
+	}
+}
+
+func initConfig() error {
+	viper.AddConfigPath("configs")
+	viper.SetConfigName("config")
+	return viper.ReadInConfig()
 }
