@@ -7,11 +7,6 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
-type LoginInput struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
 // swagger comments for register...
 func (h *Handler) register(c echo.Context) error {
 	var input models.User
@@ -36,7 +31,7 @@ func (h *Handler) register(c echo.Context) error {
 
 // swagger comments for login
 func (h *Handler) login(c echo.Context) error {
-	var input LoginInput
+	var input models.User
 
 	if err := c.Bind(&input); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{

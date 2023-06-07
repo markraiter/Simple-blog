@@ -37,14 +37,14 @@ func Start() {
 	}
 
 	// Initializing Database
-	db, err := repository.NewMySQLDB(repository.Config{
-		Driver:     viper.GetString("db.driver"),
-		Username:   viper.GetString("db.username"),
-		Connection: viper.GetString("db.connection"),
-		Host:       viper.GetString("db.host"),
-		Port:       viper.GetString("db.port"),
-		DBName:     viper.GetString("db.dbname"),
-		Password:   os.Getenv("DB_PASS"),
+	db, err := repository.NewPostgresDB(repository.Config{
+		Driver:   viper.GetString("db.driver"),
+		Username: viper.GetString("db.username"),
+		Host:     viper.GetString("db.host"),
+		Port:     viper.GetString("db.port"),
+		DBName:   viper.GetString("db.dbname"),
+		SSLMode:  viper.GetString("db.sslmode"),
+		Password: os.Getenv("DB_PASS"),
 	})
 
 	if err != nil {

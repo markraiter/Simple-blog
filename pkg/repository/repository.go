@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/markraiter/simple-blog/models"
 )
@@ -25,9 +25,9 @@ type Repository struct {
 	Comments
 }
 
-func NewRepository(db *sql.DB) *Repository {
+func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
-		Authorization: NewAuthMySQL(db),
-		Posts:         NewPostMySQL(db),
+		Authorization: NewAuthPostgres(db),
+		Posts:         NewPostPostgres(db),
 	}
 }
