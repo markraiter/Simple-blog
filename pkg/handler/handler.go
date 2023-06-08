@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 	"github.com/markraiter/simple-blog/pkg/service"
 )
 
@@ -15,16 +15,16 @@ func NewHandler(services *service.Service) *Handler {
 	}
 }
 
-func (h *Handler) InitRoutes() *echo.Echo {
-	e := echo.New()
+func (h *Handler) InitRoutes() *gin.Engine {
+	router := gin.New()
 
-	auth := e.Group("/auth")
+	auth := router.Group("/auth")
 	{
 		auth.POST("/register", h.register)
 		auth.POST("/login", h.login)
 	}
 
-	api := e.Group("/api", h.userIdentity)
+	api := router.Group("/api", h.userIdentity)
 	{
 		posts := api.Group("/posts")
 		{
@@ -45,5 +45,5 @@ func (h *Handler) InitRoutes() *echo.Echo {
 		}
 	}
 
-	return e
+	return router
 }

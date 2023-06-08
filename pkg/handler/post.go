@@ -3,50 +3,53 @@ package handler
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 	"github.com/markraiter/simple-blog/models"
 )
 
-func (h *Handler) getAllPosts(c echo.Context) error {
-	return nil
+func (h *Handler) getAllPosts(c *gin.Context) {
+
 }
 
-func (h *Handler) getPostByID(c echo.Context) error {
-	return nil
+func (h *Handler) getPostByID(c *gin.Context) {
+
 }
 
-func (h *Handler) createPost(c echo.Context) error {
+func (h *Handler) createPost(c *gin.Context) {
 	userID, err := getUserId(c)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
+		c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	var input models.Post
 
-	if err := c.Bind(&input); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
+	if err := c.BindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	id, err := h.services.Posts.Create(userID, input)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
+		c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
+		return
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	c.JSON(http.StatusOK, map[string]interface{}{
 		"id": id,
 	})
 }
 
-func (h *Handler) updatePost(c echo.Context) error {
-	return nil
+func (h *Handler) updatePost(c *gin.Context) {
+
 }
 
-func (h *Handler) deletePost(c echo.Context) error {
-	return nil
+func (h *Handler) deletePost(c *gin.Context) {
+
 }

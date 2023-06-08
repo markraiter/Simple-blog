@@ -19,20 +19,13 @@ func NewPostPostgres(db *sqlx.DB) *PostPostgres {
 }
 
 func (r *PostPostgres) Create(userID int, post models.Post) (int, error) {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return 0, err
-	}
-
 	var id int
-	createPostQuery := fmt.Sprintf("INSERT INTO %s (title, body) VALUES ($1, $2)", postsTable)
+	createPostQuery := fmt.Sprintf("INSERT INTO %s (userId, title, body) VALUES ($1, $2, $3) RETURNING id", postsTable)
 
-	row := tx.QueryRow(createPostQuery, post.Title, post.Body)
-	err = row.Scan(&id)
-	if err != nil {
-		tx.Rollback()
+	row := r.db.QueryRow(createPostQuery, post.Title, post.Body)
+	if err := row.Scan(&id); err != nil {
 		return 0, err
 	}
 
-	return id, tx.Commit()
+	return id, nil
 }

@@ -1,23 +1,25 @@
 package handler
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/gin-gonic/gin"
+)
 
-func (h *Handler) getAllComments(c echo.Context) error {
-	return nil
+func (h *Handler) getAllComments(c *gin.Context) {
+
 }
 
-func (h *Handler) getCommentByID(c echo.Context) error {
-	return nil
+func (h *Handler) getCommentByID(c *gin.Context) {
+
 }
 
-func (h *Handler) createComment(c echo.Context) error {
-	return nil
+func (h *Handler) createComment(c *gin.Context) {
+
 }
 
-func (h *Handler) updateComment(c echo.Context) error {
-	return nil
+func (h *Handler) updateComment(c *gin.Context) {
+
 }
 
-func (h *Handler) deleteComment(c echo.Context) error {
-	return nil
+func (h *Handler) deleteComment(c *gin.Context) {
+
 }

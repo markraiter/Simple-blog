@@ -1,48 +1,49 @@
 package handler
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 )
 
 const (
 	authHeader = "Authorization"
-	userCtx    = "userID"
+	userCtx    = "userId"
 )
 
-func (h *Handler) userIdentity(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		header := c.Request().Header.Get(authHeader)
-		if header == "" {
-			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "empty auth header",
-			})
-		}
-
-		tokenString := strings.Replace(header, "Bearer ", "", 1)
-
-		userID, err := h.services.ParseToken(tokenString)
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": err.Error(),
-			})
-		}
-
-		c.Set(userCtx, userID)
-
-		return nil
+func (h *Handler) userIdentity(c *gin.Context) {
+	header := c.GetHeader(authHeader)
+	if header == "" {
+		c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "empty auth header",
+		})
+		return
 	}
+
+	tokenString := strings.Replace(header, "Bearer ", "", 1)
+
+	userID, err := h.services.ParseToken(tokenString)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.Set(userCtx, userID)
 }
 
-func getUserId(c echo.Context) (int, error) {
-	id := c.Get(userCtx)
+func getUserId(c *gin.Context) (int, error) {
+	id, ok := c.Get(userCtx)
+	if !ok {
+		return 0, errors.New("user id not found")
+	}
 
 	idInt, ok := id.(int)
 	if !ok {
-		return 0, fmt.Errorf("user id is of invalid type")
+		return 0, errors.New("user id is of invalid type")
 	}
 
 	return idInt, nil
