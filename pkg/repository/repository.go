@@ -21,6 +21,10 @@ type Posts interface {
 
 type Comments interface {
 	Create(postID int, comment models.Comment) (int, error)
+	GetAll() ([]models.Comment, error)
+	GetByID(commentID int) (models.Comment, error)
+	Update(commentID int, input models.UpdateCommentInput) error
+	Delete(commentID int) error
 }
 
 type Repository struct {
@@ -33,5 +37,6 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		Posts:         NewPostPostgres(db),
+		Comments:      NewCommentPostgres(db),
 	}
 }

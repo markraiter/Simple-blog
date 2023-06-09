@@ -20,6 +20,11 @@ type Posts interface {
 }
 
 type Comments interface {
+	Create(userID int, comment models.Comment) (int, error)
+	GetAll() ([]models.Comment, error)
+	GetByID(commentID int) (models.Comment, error)
+	Update(commentID int, input models.UpdateCommentInput) error
+	Delete(commentID int) error
 }
 
 type Service struct {
@@ -32,5 +37,6 @@ func NewService(repos *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
 		Posts:         NewPostService(repos.Posts),
+		Comments:      NewCommentService(repos.Comments),
 	}
 }

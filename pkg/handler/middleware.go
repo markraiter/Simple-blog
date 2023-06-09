@@ -10,7 +10,8 @@ import (
 
 const (
 	authHeader = "Authorization"
-	userCtx    = "userId"
+	userCtx    = "user_id"
+	postCtx    = "post_id"
 )
 
 func (h *Handler) userIdentity(c *gin.Context) {
@@ -44,6 +45,20 @@ func getUserId(c *gin.Context) (int, error) {
 	idInt, ok := id.(int)
 	if !ok {
 		return 0, errors.New("user id is of invalid type")
+	}
+
+	return idInt, nil
+}
+
+func getPostId(c *gin.Context) (int, error) {
+	id, ok := c.Get(postCtx)
+	if !ok {
+		return 0, errors.New("post id not found")
+	}
+
+	idInt, ok := id.(int)
+	if !ok {
+		return 0, errors.New("post id is of invalid type")
 	}
 
 	return idInt, nil

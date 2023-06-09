@@ -10,7 +10,7 @@ import (
 
 // Swagger comment for getAllPosts
 func (h *Handler) getAllPosts(c *gin.Context) {
-	posts, err := h.services.GetAll()
+	posts, err := h.services.Posts.GetAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
@@ -31,7 +31,7 @@ func (h *Handler) getPostByID(c *gin.Context) {
 		return
 	}
 
-	post, err := h.services.GetByID(id)
+	post, err := h.services.Posts.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
@@ -93,14 +93,16 @@ func (h *Handler) updatePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.services.Update(id, input); err != nil {
+	if err := h.services.Posts.Update(id, input); err != nil {
 		c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, "Updated!")
+	c.JSON(http.StatusOK, map[string]string{
+		"message": "Updated!",
+	})
 }
 
 // Swagger comment for deletePost
@@ -113,12 +115,14 @@ func (h *Handler) deletePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.services.Delete(id); err != nil {
+	if err := h.services.Posts.Delete(id); err != nil {
 		c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusNoContent, "Deleted!")
+	c.JSON(http.StatusNoContent, map[string]string{
+		"message": "Deleted!",
+	})
 }
