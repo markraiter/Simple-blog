@@ -8,6 +8,7 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
+// swagger comment for getAllComments
 func (h *Handler) getAllComments(c *gin.Context) {
 	comments, err := h.services.Comments.GetAll()
 	if err != nil {
@@ -20,6 +21,7 @@ func (h *Handler) getAllComments(c *gin.Context) {
 	c.JSON(http.StatusCreated, comments)
 }
 
+// swagger comment for getCommentByID
 func (h *Handler) getCommentByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -40,6 +42,7 @@ func (h *Handler) getCommentByID(c *gin.Context) {
 	c.JSON(http.StatusOK, comment)
 }
 
+// swagger comment for createComment
 func (h *Handler) createComment(c *gin.Context) {
 	postID, err := getPostId(c)
 	if err != nil {
@@ -71,6 +74,7 @@ func (h *Handler) createComment(c *gin.Context) {
 	})
 }
 
+// swagger comment for updateComment
 func (h *Handler) updateComment(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -101,6 +105,7 @@ func (h *Handler) updateComment(c *gin.Context) {
 	})
 }
 
+// swagger comment for deleteComment
 func (h *Handler) deleteComment(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
