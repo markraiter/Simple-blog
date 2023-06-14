@@ -8,7 +8,18 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
-// Swagger comment for getAllPosts
+// @Summary Get All Posts
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description get all posts
+// @ID get-all-posts
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} []models.Posts
+// @Failure 400,404 {object} error
+// @Failure 500 {object} error
+// @Failure default {object} error
+// @Router /api/posts [get]
 func (h *Handler) getAllPosts(c *gin.Context) {
 	posts, err := h.services.Posts.GetAll()
 	if err != nil {
@@ -21,7 +32,18 @@ func (h *Handler) getAllPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, posts)
 }
 
-// Swagger comment for getPostByID
+// @Summary Get Post By Id
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description get post by id
+// @ID get-post-by-id
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} models.Post
+// @Failure 400,404 {object} error
+// @Failure 500 {object} error
+// @Failure default {object} error
+// @Router /api/posts/:id [get]
 func (h *Handler) getPostByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -42,7 +64,19 @@ func (h *Handler) getPostByID(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 
-// Swagger comment for createPost
+// @Summary Create post
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description create post
+// @ID create-post
+// @Accept  json
+// @Produce  json
+// @Param input body models.Post true "post info"
+// @Success 200 {integer} integer 1
+// @Failure 400,404 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Failure default {object} errorResponse
+// @Router /api/posts [post]
 func (h *Handler) createPost(c *gin.Context) {
 	userID, err := getUserId(c)
 	if err != nil {

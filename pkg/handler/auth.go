@@ -7,7 +7,18 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
-// swagger comments for register...
+// @Summary SignUp
+// @Tags auth
+// @Description create account
+// @ID create-account
+// @Accept  json
+// @Produce  json
+// @Param input body models.User true "account info"
+// @Success 200 {integer} integer 1
+// @Failure 400,404 {object} error
+// @Failure 500 {object} error
+// @Failure default {object} error
+// @Router /auth/register [post]
 func (h *Handler) register(c *gin.Context) {
 	var input models.User
 
@@ -31,7 +42,18 @@ func (h *Handler) register(c *gin.Context) {
 	})
 }
 
-// swagger comments for login
+// @Summary SignIn
+// @Tags auth
+// @Description login
+// @ID login
+// @Accept  json
+// @Produce  json
+// @Param input body models.User true "credentials"
+// @Success 200 {string} string "token"
+// @Failure 400,404 {object} error
+// @Failure 500 {object} error
+// @Failure default {object} error
+// @Router /auth/logn [post]
 func (h *Handler) login(c *gin.Context) {
 	var input models.User
 

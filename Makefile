@@ -1,8 +1,8 @@
 build:
-	docker-compose build
+	docker compose build simple-blog
 
 run:
-	docker-compose up
+	docker compose up simple-blog
 
 migrate_up:
 	migrate -database "postgres://postgres:qwerty@localhost:5432/db_postgres?sslmode=disable" -path ./ up
