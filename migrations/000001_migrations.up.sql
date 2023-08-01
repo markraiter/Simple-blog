@@ -1,23 +1,20 @@
-CREATE TABLE users
-(
-    id            serial       not null unique,
-    email         varchar(255) not null unique,
-    password_hash varchar(255) not null
+CREATE TABLE users (
+    id            SERIAL PRIMARY KEY,
+    email         VARCHAR(100) UNIQUE                            NOT NULL,
+    password_hash VARCHAR(255)                                   NOT NULL
 );
 
-CREATE TABLE posts
-(
-    id          serial       not null unique,
-    user_id     int          not null references users (id) on delete cascade,
-    title       varchar(255) not null,
-    body        text
+CREATE TABLE posts (
+    id            SERIAL PRIMARY KEY,
+    user_id       SERIAL REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+    title         VARCHAR(255) NOT NULL,
+    body          TEXT 
 );
 
-CREATE TABLE comments
-(
-    id      serial                                           not null unique,
-    user_id int references users (id) on delete cascade      not null,
-    post_id int references posts (id) on delete cascade      not null,
-    email   varchar(255)                                     not null unique,
-    body    text
+CREATE TABLE comments (
+    id            SERIAL PRIMARY KEY,
+    user_id       SERIAL REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+    post_id       SERIAL REFERENCES posts (id) ON DELETE CASCADE NOT NULL,
+    email         VARCHAR(100)                                   NOT NULL,
+    body          TEXT
 );

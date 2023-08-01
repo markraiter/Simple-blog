@@ -1,11 +1,10 @@
-package repository
+package postgres
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/jmoiron/sqlx"
-
 	_ "github.com/lib/pq"
 )
 
@@ -26,9 +25,10 @@ type Config struct {
 }
 
 func NewPostgresDB(cfg Config) (*sqlx.DB, error) {
-	db, err := sqlx.Open(cfg.Driver, fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode))
+	entryString := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode)
+	db, err := sqlx.Open(cfg.Driver, entryString)
 	if err != nil {
-		log.Fatalf("error connecting to database: %s\n", err.Error())
+		log.Fatal(err)
 	}
 
 	err = db.Ping()
