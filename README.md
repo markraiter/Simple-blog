@@ -110,6 +110,9 @@ make run
 
 - Endpoint: **POST /api/posts**
 - Description: Creates a new post for the authenticated user.
+- Query Parameters:
+    - user_id: ID of the user who creates the post.
+    `?user_id=?`
 - Request Body:
 ```JSON 
 {
