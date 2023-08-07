@@ -25,11 +25,20 @@ make databaseinit
 ``` BASH
 make migrate_up
 ```
-3. Run the Blog:
+3. Make Swagger docs:
+``` BASH
+make swag
+```
+4. Run the Blog:
 ``` BASH
 make run
 ```
-4. Blog will run on http://localhost:8080
+5. Test the app:
+``` BASH
+make test
+```
+6. Blog will run on http://localhost:8080
+7. Also you can look at API Documentation on http://localhost:8080/swagger/index.html
 
 ## API Documentation
 
