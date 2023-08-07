@@ -94,7 +94,7 @@ make run
     `?user_id=?`
 - Response:
     - **200 OK**: Returns an array of posts created by the user.
-    - **404 Not Found**: Post with specified user_iddoes not exist.
+    - **404 Not Found**: Post with specified user_id does not exist.
     - **500 Internal Server Error**: An unexpected error occurred on the server.
 
 ##### Get Post By ID

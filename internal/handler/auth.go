@@ -13,6 +13,19 @@ type LoginInput struct {
 	Password string
 }
 
+// @Summary SignUp
+// @Tags auth
+// @Description create account
+// @ID create-account
+// @Accept  json
+// @Produce  json
+// @Param input body LoginInput true "account info"
+// @Success 201 {integer} integer "User successfully registered. Returns the id of the created user."
+// @Failure 400 {string} string "Invalid request or missing required fields."
+// @Failure 409 {string} string "User already exists with the provided email or username."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /auth/sign-up [post]
+// signUp is a handler for registration. It returns the id of the newly created user.
 func (h *Handler) signUp(c *gin.Context) {
 	user := new(models.User)
 
@@ -41,12 +54,24 @@ func (h *Handler) signUp(c *gin.Context) {
 	c.String(http.StatusCreated, "user successfully created by id %d", id)
 }
 
+// @Summary SignIn
+// @Tags auth
+// @Description login
+// @ID login
+// @Accept  json
+// @Produce  json
+// @Param input body LoginInput true "credentials"
+// @Success 200 {string} string "token"
+// @Failure 404 {string} string "Invalid credentials."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /auth/sign-in [post]
+// signIn is a handler for login. It returns JWT token.
 func (h *Handler) signIn(c *gin.Context) {
 	var input LoginInput
 
 	if err := c.Bind(&input); err != nil {
 		log.Printf("incorrect input: %v\n", err)
-		c.String(http.StatusBadRequest, "incorrect input")
+		c.String(http.StatusNotFound, "incorrect input")
 		return
 	}
 

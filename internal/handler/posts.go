@@ -9,6 +9,16 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
+// @Summary Get All Posts
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description get all posts
+// @ID get-all-posts
+// @Produce  json
+// @Success 200 {array} models.Post "Returns an array of posts."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /api/posts/all [get]
+// getAllPosts is a handler for getting list of all the posts. It returns an array of posts
 func (h *Handler) getAllPosts(c *gin.Context) {
 	posts, err := h.storage.Posts.GetAll()
 	if err != nil {
@@ -20,6 +30,18 @@ func (h *Handler) getAllPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, posts)
 }
 
+// @Summary Filter Posts by User
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description filter posts by user ID
+// @ID filter-posts-by-user
+// @Param user_id query int true "User ID"
+// @Produce json
+// @Success 200 {array} models.Post "Returns an array of posts created by the user."
+// @Failure 404 {string} string "Post with specified user_id does not exist."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /api/posts [get]
+// filterPostsByUser is a handler for filtering posts by user ID. It returns an array of posts associated with the specified user.
 func (h *Handler) filterPostsByUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Query("user_id"))
 	if err != nil {
@@ -39,6 +61,18 @@ func (h *Handler) filterPostsByUser(c *gin.Context) {
 	c.JSON(http.StatusOK, posts)
 }
 
+// @Summary Get Post By ID
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description get post by ID
+// @ID get-post-by-id
+// @Param id path int true "Post ID"
+// @Produce json
+// @Success 200 {object} models.Post "Returns the post object."
+// @Failure 404 {string} string "Post with the specified ID does not exist."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /api/posts/{id} [get]
+// getPostByID is a handler for getting a post by its ID. It returns the requested post if found.
 func (h *Handler) getPostByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -58,6 +92,20 @@ func (h *Handler) getPostByID(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 
+// @Summary Create Post
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description create post
+// @ID create-post
+// @Param user_id query int true "User ID"
+// Param input body models.UpdatePostInput true "Post credentials"
+// @Accept json
+// @Produce json
+// @Success 201 {integer} integer "Post successfully created. Returns the newly created post id."
+// @Failure 400 {string} string "Invalid request or missing required fields."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /api/posts [post]
+// createPost is a handler for creating new post. It returns the ID of the newly created post.
 func (h *Handler) createPost(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Query("user_id"))
 	if err != nil {
@@ -85,6 +133,21 @@ func (h *Handler) createPost(c *gin.Context) {
 	c.String(http.StatusCreated, "post successfully created by id %d", id)
 }
 
+// @Summary Update Post
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description update an existing post
+// @ID update-post
+// @Param id path int true "Post ID"
+// @Accept json
+// @Produce json
+// @Param post body models.UpdatePostInput true "Post data to update"
+// @Success 200 {object} models.UpdatePostInput "Post successfully updated."
+// @Failure 400 {string} string "Invalid request or missing required."
+// @Failure 404 {string} string "Post with the specified ID does not exist."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /api/posts/{id} [patch]
+// updatePost is a handler for updating an existing post. It updates the post with the specified ID.
 func (h *Handler) updatePost(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -111,6 +174,18 @@ func (h *Handler) updatePost(c *gin.Context) {
 	c.String(http.StatusOK, "post #%d successfully updated:\ntitle: %+v\nbody: %+v", id, *input.Title, *input.Body)
 }
 
+// @Summary Delete Post
+// @Security ApiKeyAuth
+// @Tags posts
+// @Description delete a post by ID
+// @ID delete-post
+// @Param id path int true "Post ID"
+// @Produce json
+// @Success 200 {string} string "Post successfully deleted."
+// @Failure 404 {string} string "Post with the specified ID does not exist."
+// @Failure 500 {string} string "An unexpected error occurred on the server."
+// @Router /api/posts/{id} [delete]
+// deletePost is a handler for deleting a post by its ID. It deletes the post with the specified ID.
 func (h *Handler) deletePost(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

@@ -18,8 +18,10 @@ import (
 // @title REST API for Simple Blog Swagger Example
 // @version 1.0
 // @description This is a simple blog project for practicing Go REST API.
+
 // @host localhost:8080
 // @BasePath /
+
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
