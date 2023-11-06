@@ -8,15 +8,6 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
-type Posts interface {
-	GetAll() ([]models.Post, error)
-	Filter(userID uint) ([]models.Post, error)
-	Get(id uint) (*models.Post, error)
-	Create(post *models.Post, userID uint) (uint, error)
-	Update(id uint, input *models.UpdatePostInput) error
-	Delete(id uint) error
-}
-
 type Post struct {
 	db *sqlx.DB
 }

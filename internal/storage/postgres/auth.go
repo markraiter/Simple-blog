@@ -10,13 +10,6 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
-type Authentication interface {
-	Create(user *models.User) (uint, error)
-	GetEmail(email string) string
-	GetUserByEmail(email, password string) (*models.User, error)
-	GenerateToken(email, password string) (string, error)
-}
-
 type Auth struct {
 	db *sqlx.DB
 }

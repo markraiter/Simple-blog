@@ -8,16 +8,6 @@ import (
 	"github.com/markraiter/simple-blog/models"
 )
 
-type Comments interface {
-	GetAll() ([]models.Comment, error)
-	FilterByPost(postID uint) ([]models.Comment, error)
-	FilterByUser(userID uint) ([]models.Comment, error)
-	Get(id uint) (*models.Comment, error)
-	Create(comment *models.Comment, userID, postID uint) (uint, error)
-	Update(id uint, input *models.UpdateCommentInput) error
-	Delete(id uint) error
-}
-
 type Comment struct {
 	db *sqlx.DB
 }
