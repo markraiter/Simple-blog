@@ -11,6 +11,8 @@ import (
 	"github.com/markraiter/simple-blog/internal/app/api"
 	"github.com/markraiter/simple-blog/internal/app/api/handler"
 	"github.com/markraiter/simple-blog/internal/app/api/middleware"
+	"github.com/markraiter/simple-blog/internal/app/service"
+	"github.com/markraiter/simple-blog/internal/app/storage"
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
@@ -28,7 +30,11 @@ func main() {
 	log.Info("starting application...")
 	log.Info("port: " + cfg.Server.Port)
 
-	handler := handler.New(log)
+	db := storage.New(cfg.Postgres)
+
+	service := service.New(log, db)
+
+	handler := handler.New(log, validate, service)
 
 	server := new(api.Server)
 

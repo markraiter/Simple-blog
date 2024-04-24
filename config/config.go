@@ -15,6 +15,7 @@ type Config struct {
 }
 
 type Postgres struct {
+	Driver   string `env:"POSTGRES_DRIVER" env-default:"postgres"`
 	Host     string `env:"POSTGRES_HOST" env-default:"localhost"`
 	Port     string `env:"POSTGRES_PORT" env-default:"5432"`
 	User     string `env:"POSTGRES_USER" env-required:"true"`
