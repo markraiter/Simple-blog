@@ -12,11 +12,13 @@ type Healthcheck struct {
 	log *slog.Logger
 }
 
-func (h *Healthcheck) APIHealth(w http.ResponseWriter, r *http.Request) {
-	resp := model.Response{Message: "healthy"}
+func (h *Healthcheck) APIHealth() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp := model.Response{Message: "healthy"}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(resp)
+	}
 }
