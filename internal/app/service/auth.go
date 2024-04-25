@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/markraiter/simple-blog/config"
+	"github.com/markraiter/simple-blog/internal/lib/jwt"
 	"github.com/markraiter/simple-blog/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,7 +17,7 @@ type UserSaver interface {
 }
 
 type UserProvider interface {
-	UserByEmail(ctx context.Context, email string) (*model.User, error)
+	User(ctx context.Context, email string) (*model.User, error)
 }
 
 type AuthService struct {
@@ -56,4 +58,36 @@ func (as *AuthService) RegisterUser(ctx context.Context, user *model.UserRequest
 	log.Info("user saved")
 
 	return id, nil
+}
+
+func (as *AuthService) Login(ctx context.Context, cfg config.Auth, email, password string) (*jwt.TokenPair, error) {
+	const operation = "AuthService.Login"
+
+	log := as.log.With(slog.String("operation", operation))
+
+	log.Info("getting user")
+
+	user, err := as.provider.User(ctx, email)
+	if err != nil {
+		if errors.Is(err, model.ErrUserNotFound) {
+			return nil, fmt.Errorf("%s: %w", operation, model.ErrUserNotFound)
+		}
+
+		return nil, fmt.Errorf("%s: %w", operation, err)
+	}
+
+	log.Info("comparing passwords")
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, fmt.Errorf("%s: %w", operation, model.ErrInvalidCredentials)
+	}
+
+	tokenPair, err := jwt.NewTokenPair(cfg, user)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", operation, err)
+	}
+
+	log.Info("user logged in")
+
+	return tokenPair, nil
 }

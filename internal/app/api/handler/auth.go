@@ -9,23 +9,21 @@ import (
 	"strconv"
 
 	"github.com/go-playground/validator"
+	"github.com/markraiter/simple-blog/config"
 	_ "github.com/markraiter/simple-blog/docs"
+	"github.com/markraiter/simple-blog/internal/lib/jwt"
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
-type UserSaver interface {
+type Auth interface {
 	RegisterUser(ctx context.Context, user *model.UserRequest) (int, error)
-}
-
-type UserProvider interface {
-	// UserByEmail(email string) (*model.User, error)
+	Login(ctx context.Context, cfg config.Auth, email, password string) (*jwt.TokenPair, error)
 }
 
 type AuthHandler struct {
 	log      *slog.Logger
 	validate *validator.Validate
-	saver    UserSaver
-	provider UserProvider
+	service  Auth
 }
 
 // @Summary Register user
@@ -67,7 +65,7 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 
 		log.Info("registering user")
 
-		id, err := ah.saver.RegisterUser(ctx, &userReq)
+		id, err := ah.service.RegisterUser(ctx, &userReq)
 		if err != nil {
 			if errors.Is(err, model.ErrUserAlreadyExists) {
 				log.Error("user already exists", model.Err(err))
@@ -86,5 +84,65 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(strconv.Itoa(id)))
+	}
+}
+
+// @Summary Login
+// @Description Login
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body model.LoginRequest true "User data"
+// @Success 200 {string} string "Token"
+// @Failure 400 {string} string "Bad request"
+// @Failure 500 {string} string "Internal server error"
+// @Router /auth/login [post]
+func (ah *AuthHandler) Login(ctx context.Context, cfg config.Auth) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const operation = "AuthHandler.Login"
+
+		log := ah.log.With(slog.String("operation", operation))
+
+		log.Info("parsing request")
+
+		var userReq model.LoginRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&userReq); err != nil {
+			log.Error("error parsing request", model.Err(err))
+			http.Error(w, "error parsing request", http.StatusBadRequest)
+
+			return
+		}
+
+		log.Info("validating user")
+
+		if err := ah.validate.Struct(userReq); err != nil {
+			log.Error("error validating user", model.Err(err))
+			http.Error(w, "error validating user", http.StatusBadRequest)
+
+			return
+		}
+
+		log.Info("logging in")
+
+		token, err := ah.service.Login(ctx, cfg, userReq.Email, userReq.Password)
+		if err != nil {
+			if errors.Is(err, model.ErrUserNotFound) {
+				log.Error("user not found", model.Err(err))
+				http.Error(w, "user not found", http.StatusBadRequest)
+
+				return
+			}
+
+			log.Error("error logging in", model.Err(err))
+			http.Error(w, "error logging in", http.StatusInternalServerError)
+
+			return
+		}
+
+		log.Info("logged in")
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(token)
 	}
 }

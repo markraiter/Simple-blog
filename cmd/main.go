@@ -50,7 +50,7 @@ func main() {
 	server := new(api.Server)
 
 	go func() {
-		if err := server.Run(cfg, handler.Router(ctx)); err != nil {
+		if err := server.Run(cfg, handler.Router(ctx, *cfg)); err != nil {
 			log.Error("error occured while running http server: " + err.Error())
 		}
 	}()

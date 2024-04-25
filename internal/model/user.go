@@ -14,9 +14,14 @@ type User struct {
 }
 
 type UserRequest struct {
-	Username string `json:"username" validate:"required,min=3,max=50"`
-	Password string `json:"password" validate:"required,min=8,max=50,number,upper,lower,special"`
-	Email    string `json:"email" validate:"required,email"`
+	Username string `json:"username" validate:"required,min=3,max=50" example:"username"`
+	Password string `json:"password" validate:"required,min=8,max=50,number,upper,lower,special" example:"Password12345!"`
+	Email    string `json:"email" validate:"required,email" example:"email@example.com"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required,email" example:"email@example.com"`
+	Password string `json:"password" validate:"required,min=8,max=50,number,upper,lower,special" example:"Password12345!"`
 }
 
 // ValidateContainsNumber checks if password contains at least one number

@@ -28,7 +28,7 @@ func (s *Storage) SaveUser(ctx context.Context, user *model.User) (int, error) {
 	return user.ID, nil
 }
 
-func (s *Storage) UserByEmail(ctx context.Context, email string) (*model.User, error) {
+func (s *Storage) User(ctx context.Context, email string) (*model.User, error) {
 	const operation = "Storage.UserByEmail"
 
 	query, err := s.PostgresDB.Prepare("SELECT id, username, password, email FROM users WHERE email = $1")
