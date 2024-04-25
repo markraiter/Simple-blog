@@ -16,7 +16,16 @@ import (
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
+// @title Blog API
+// @version	1.0
+// @description	Docs for Blog API
+// @contact.name Mark Raiter
+// @contact.email raitermark@proton.me
+// @host localhost:9000
+// @BasePath /
 func main() {
+	ctx := context.TODO()
+
 	cfg := config.MustLoad()
 
 	log := middleware.SetupLogger(cfg.Env)
@@ -39,7 +48,7 @@ func main() {
 	server := new(api.Server)
 
 	go func() {
-		if err := server.Run(cfg, handler.Router()); err != nil {
+		if err := server.Run(cfg, handler.Router(ctx)); err != nil {
 			log.Error("error occured while running http server: " + err.Error())
 		}
 	}()

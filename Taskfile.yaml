@@ -9,6 +9,14 @@ tasks:
     cmds:
       - go run cmd/main.go
 
+  migrateup:
+    cmds:
+      - migrate -database "postgres://postgres:qwerty@localhost:5432/blogdb?sslmode=disable" -path internal/app/storage/migrations/ up
+
+  migratedown:
+    cmds:
+      - migrate -database "postgres://postgres:qwerty@localhost:5432/blogdb?sslmode=disable" -path internal/app/storage/migrations/ down
+
   test:
     cmds:
       - go test ./...

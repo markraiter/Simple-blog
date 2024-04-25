@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
 	"github.com/go-playground/validator"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type AuthService interface {
@@ -24,11 +26,15 @@ func New(log *slog.Logger, validate *validator.Validate, auth AuthService) *Hand
 	}
 }
 
-func (h *Handler) Router() http.Handler {
+func (h *Handler) Router(ctx context.Context) http.Handler {
 	m := http.NewServeMux()
 
+	m.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
+
 	m.Handle("GET /health", h.APIHealth())
-	m.Handle("POST /auth/register", h.RegisterUser())
+	m.Handle("POST /auth/register", h.RegisterUser(ctx))
 
 	return m
 }
