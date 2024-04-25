@@ -29,17 +29,7 @@ func (as *AuthService) RegisterUser(ctx context.Context, user *model.UserRequest
 
 	log := as.log.With(slog.String("operation", operation))
 
-	log.Info("checking if user already exists")
-
-	_, err := as.provider.UserByEmail(ctx, user.Email)
-	if err != nil {
-		if errors.Is(err, model.ErrUserAlreadyExists) {
-			return 0, fmt.Errorf("%s: %w", operation, model.ErrUserAlreadyExists)
-		}
-	}
-
-	log.Info("this is a new user")
-	log.Info("saving user")
+	log.Info("hashing password")
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -52,8 +42,14 @@ func (as *AuthService) RegisterUser(ctx context.Context, user *model.UserRequest
 		Email:    user.Email,
 	}
 
+	log.Info("saving user")
+
 	id, err := as.saver.SaveUser(ctx, &userResp)
 	if err != nil {
+		if errors.Is(err, model.ErrUserAlreadyExists) {
+			return 0, fmt.Errorf("%s: %w", operation, model.ErrUserAlreadyExists)
+		}
+
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
 

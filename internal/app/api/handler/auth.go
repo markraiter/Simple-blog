@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -51,6 +52,7 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&userReq); err != nil {
 			log.Error("error parsing request", model.Err(err))
 			http.Error(w, "error parsing request", http.StatusBadRequest)
+
 			return
 		}
 
@@ -59,6 +61,7 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 		if err := ah.validate.Struct(userReq); err != nil {
 			log.Error("error validating user", model.Err(err))
 			http.Error(w, "error validating user", http.StatusBadRequest)
+
 			return
 		}
 
@@ -66,8 +69,16 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 
 		id, err := ah.saver.RegisterUser(ctx, &userReq)
 		if err != nil {
+			if errors.Is(err, model.ErrUserAlreadyExists) {
+				log.Error("user already exists", model.Err(err))
+				http.Error(w, "user already exists", http.StatusBadRequest)
+
+				return
+			}
+
 			log.Error("error registering user", model.Err(err))
 			http.Error(w, "error registering user", http.StatusInternalServerError)
+
 			return
 		}
 

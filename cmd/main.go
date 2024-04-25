@@ -16,6 +16,10 @@ import (
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
+var (
+	ctx = context.TODO()
+)
+
 // @title Blog API
 // @version	1.0
 // @description	Docs for Blog API
@@ -24,8 +28,6 @@ import (
 // @host localhost:9000
 // @BasePath /
 func main() {
-	ctx := context.TODO()
-
 	cfg := config.MustLoad()
 
 	log := middleware.SetupLogger(cfg.Env)
@@ -60,7 +62,7 @@ func main() {
 
 	log.Info("shutting down application...")
 
-	if err := server.Shutdown(context.TODO()); err != nil {
+	if err := server.Shutdown(ctx); err != nil {
 		log.Error("error occured while shutting down the server: " + err.Error())
 	}
 }
