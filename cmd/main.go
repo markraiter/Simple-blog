@@ -27,6 +27,9 @@ var (
 // @contact.email raitermark@proton.me
 // @host localhost:9000
 // @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg := config.MustLoad()
 
