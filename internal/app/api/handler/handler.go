@@ -19,6 +19,11 @@ type Handler struct {
 	AuthHandler
 }
 
+// The response struct is used to send a message back to the client.
+type response struct {
+	Message string `json:"message"`
+}
+
 func New(log *slog.Logger, validate *validator.Validate, auth AuthService) *Handler {
 	return &Handler{
 		Healthcheck{log: log},

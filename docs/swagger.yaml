@@ -1,5 +1,7 @@
 basePath: /
 definitions:
+  handler.response:
+    type: object
   model.LoginRequest:
     properties:
       email:
@@ -103,6 +105,19 @@ paths:
       summary: Register user
       tags:
       - auth
+  /health:
+    get:
+      description: Healthcheck
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: healthy
+          schema:
+            $ref: '#/definitions/handler.response'
+      summary: Healthcheck
+      tags:
+      - health
 securityDefinitions:
   ApiKeyAuth:
     in: header

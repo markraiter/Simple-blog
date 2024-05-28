@@ -109,9 +109,32 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/health": {
+            "get": {
+                "description": "Healthcheck",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Healthcheck",
+                "responses": {
+                    "200": {
+                        "description": "healthy",
+                        "schema": {
+                            "$ref": "#/definitions/handler.response"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "handler.response": {
+            "type": "object"
+        },
         "model.LoginRequest": {
             "type": "object",
             "required": [
