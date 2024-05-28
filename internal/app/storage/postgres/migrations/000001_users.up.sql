@@ -23,3 +23,5 @@ CREATE TRIGGER set_users_updated_at_trigger
 BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION set_users_updated_at();
+
+-- migrate create -ext sql -dir internal/app/storage/postgres/migrations -seq 'name_of_migration'
