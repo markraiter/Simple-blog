@@ -1,0 +1,28 @@
+version: "3"
+
+dotenv: ['.env']
+
+tasks:
+  run:
+    aliases:
+      - r
+    env:
+      DB_HOST: localhost
+    cmds:
+      - go run cmd/main.go
+
+  migrateup:
+    cmds:
+      - migrate -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=${POSTGRES_SSL_MODE}" -path internal/app/storage/postgres/migrations/ up
+
+  migratedown:
+    cmds:
+      - migrate -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=${POSTGRES_SSL_MODE}" -path internal/app/storage/postgres/migrations/ down
+
+  test:
+    cmds:
+      - go test ./...
+
+  swaginit:
+    cmds:
+      - swag init --outputTypes go,yaml -g cmd/main.go internal/model

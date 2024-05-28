@@ -2,85 +2,78 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/joho/godotenv"
-	"github.com/markraiter/simple-blog/cmd/server"
-	"github.com/markraiter/simple-blog/internal/handler"
-	"github.com/markraiter/simple-blog/internal/storage"
-	"github.com/markraiter/simple-blog/internal/storage/postgres"
-	"github.com/spf13/viper"
+	"github.com/go-playground/validator"
+	"github.com/markraiter/simple-blog/config"
+	"github.com/markraiter/simple-blog/internal/app/api"
+	"github.com/markraiter/simple-blog/internal/app/api/handler"
+	"github.com/markraiter/simple-blog/internal/app/api/middleware"
+	"github.com/markraiter/simple-blog/internal/app/service"
+	"github.com/markraiter/simple-blog/internal/app/storage/postgres"
+	"github.com/markraiter/simple-blog/internal/model"
 )
 
-// @title REST API for Simple Blog Swagger Example
-// @version 1.0
-// @description This is a simple blog project for practicing Go REST API.
+var (
+	ctx = context.TODO()
+)
 
-// @host localhost:8080
+// @title Blog API
+// @version	1.0
+// @description	Docs for Blog API
+// @contact.name Mark Raiter
+// @contact.email raitermark@proton.me
+// @host localhost:8888
 // @BasePath /
-
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
-
 func main() {
+	cfg := config.MustLoad()
 
-	if err := initConfig(); err != nil {
-		log.Fatalf("error initializing configs: %s\n", err.Error())
-	}
+	log := middleware.SetupLogger(cfg.Env)
 
-	err := godotenv.Load()
+	validate := validator.New()
+	validate.RegisterValidation("number", model.ValidateContainsNumber, false)
+	validate.RegisterValidation("upper", model.ValidateContainsUpper, false)
+	validate.RegisterValidation("lower", model.ValidateContainsLower, false)
+	validate.RegisterValidation("special", model.ValidateContainsSpecial, false)
 
-	if err != nil {
-		log.Fatalf("failed to load environment variables: %s\n", err.Error())
-	}
+	log.Info("starting application...")
+	log.Info("port: " + cfg.Server.Port)
 
-	db, err := postgres.NewPostgresDB(postgres.Config{
-		Driver:   viper.GetString("db.driver"),
-		Username: viper.GetString("db.username"),
-		Host:     viper.GetString("db.host"),
-		Port:     viper.GetString("db.port"),
-		DBName:   viper.GetString("db.dbname"),
-		SSLMode:  viper.GetString("db.sslmode"),
-		Password: os.Getenv("DB_PASS"),
-	})
+	db := postgres.New(cfg.Postgres)
 
-	if err != nil {
-		log.Fatalf("error initializing database: %s\n", err.Error())
-	}
+	service := service.New(
+		log,
+		db,
+		db,
+	)
 
-	storage := storage.NewStorage(db)
-	handler := handler.NewHandler(storage)
+	handler := handler.New(
+		log,
+		validate,
+		service,
+	)
 
-	server := new(server.Server)
+	server := new(api.Server)
+
 	go func() {
-		if err := server.Run(viper.GetString("port"), handler.InitRoutes()); err != nil {
-			log.Fatalf("error ocured while running http server: %s\n", err.Error())
+		if err := server.Run(cfg, handler.Router(ctx, *cfg)); err != nil {
+			panic("error occured while running the server: " + err.Error())
 		}
 	}()
 
-	log.Print("Blog Started...")
-
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+
 	<-quit
 
-	log.Print("Blog Shutting Down")
+	log.Info("shutting down application...")
 
-	if err := server.Shotdown(context.Background()); err != nil {
-		log.Printf("error occured on server shutting down: %s", err.Error())
+	if err := server.Shutdown(ctx); err != nil {
+		log.Error("error occured while shutting down the server: " + err.Error())
 	}
-
-	if err := db.Close(); err != nil {
-		log.Printf("error occured on db connection close: %s", err.Error())
-	}
-}
-
-func initConfig() error {
-	viper.AddConfigPath("configs")
-	viper.SetConfigName("config")
-	return viper.ReadInConfig()
 }
