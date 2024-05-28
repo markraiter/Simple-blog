@@ -25,21 +25,3 @@ func TestNewToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 }
-
-func TestNewTokenPair(t *testing.T) {
-	cfg := config.Auth{
-		SigningKey: "testKey",
-		AccessTTL:  time.Minute,
-		RefreshTTL: time.Minute,
-	}
-
-	user := &model.User{
-		ID: 111,
-	}
-
-	tokenPair, err := NewTokenPair(cfg, user)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, tokenPair)
-	assert.NotEmpty(t, tokenPair.AccessToken)
-	assert.NotEmpty(t, tokenPair.RefreshToken)
-}

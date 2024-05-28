@@ -24,35 +24,6 @@ type TokenPair struct {
 	RefreshExpire time.Time
 }
 
-// NewTokenPair generates new custom struct TokenPair and returns it.
-//
-// In case of error occurs it throws an error.
-func NewTokenPair(cfg config.Auth, user *model.User) (*TokenPair, error) {
-	const operation = "jwt.NewTokenPair"
-
-	accessExpire := time.Now().Add(cfg.AccessTTL)
-	refreshExpire := time.Now().Add(cfg.RefreshTTL)
-
-	accessToken, err := NewToken(cfg, user, cfg.AccessTTL)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", operation, err)
-	}
-
-	refreshToken, err := NewToken(cfg, user, cfg.RefreshTTL)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", operation, err)
-	}
-
-	tokenPair := TokenPair{
-		AccessToken:   accessToken,
-		RefreshToken:  refreshToken,
-		AccessExpire:  accessExpire,
-		RefreshExpire: refreshExpire,
-	}
-
-	return &tokenPair, nil
-}
-
 // NewToken generates new JWT token and returns signedString.
 //
 // In case of error occurs it throws an error.
