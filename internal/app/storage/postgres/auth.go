@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/lib/pq"
+	"github.com/markraiter/simple-blog/internal/app/storage"
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
@@ -19,7 +20,7 @@ func (s *Storage) SaveUser(ctx context.Context, user *model.User) (int, error) {
 		var pgErr *pq.Error
 
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return 0, fmt.Errorf("%s: %w", operation, model.ErrUserAlreadyExists)
+			return 0, fmt.Errorf("%s: %w", operation, storage.ErrAlreadyExists)
 		}
 
 		return 0, fmt.Errorf("%s: %w", operation, err)
@@ -43,7 +44,7 @@ func (s *Storage) User(ctx context.Context, email string) (*model.User, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%s: %w", operation, model.ErrUserNotFound)
+			return nil, fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
 		}
 
 		return nil, fmt.Errorf("%s: %w", operation, err)

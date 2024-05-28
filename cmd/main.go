@@ -12,7 +12,7 @@ import (
 	"github.com/markraiter/simple-blog/internal/app/api/handler"
 	"github.com/markraiter/simple-blog/internal/app/api/middleware"
 	"github.com/markraiter/simple-blog/internal/app/service"
-	"github.com/markraiter/simple-blog/internal/app/storage"
+	"github.com/markraiter/simple-blog/internal/app/storage/postgres"
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
@@ -25,7 +25,7 @@ var (
 // @description	Docs for Blog API
 // @contact.name Mark Raiter
 // @contact.email raitermark@proton.me
-// @host localhost:9000
+// @host localhost:8888
 // @BasePath /
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
@@ -44,7 +44,7 @@ func main() {
 	log.Info("starting application...")
 	log.Info("port: " + cfg.Server.Port)
 
-	db := storage.New(cfg.Postgres)
+	db := postgres.New(cfg.Postgres)
 
 	service := service.New(log, db)
 
@@ -54,7 +54,7 @@ func main() {
 
 	go func() {
 		if err := server.Run(cfg, handler.Router(ctx, *cfg)); err != nil {
-			log.Error("error occured while running http server: " + err.Error())
+			panic("error occured while running the server: " + err.Error())
 		}
 	}()
 

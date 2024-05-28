@@ -1,6 +1,15 @@
 package service
 
-import "log/slog"
+import (
+	"errors"
+	"log/slog"
+)
+
+var (
+	ErrAlreadyExists      = errors.New("already exists")
+	ErrNotFound           = errors.New("not found")
+	ErrInvalidCredentials = errors.New("invalid credentials")
+)
 
 type AuthStorage interface {
 	UserSaver

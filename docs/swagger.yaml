@@ -34,7 +34,7 @@ definitions:
     - password
     - username
     type: object
-host: localhost:9000
+host: localhost:8888
 info:
   contact:
     email: raitermark@proton.me

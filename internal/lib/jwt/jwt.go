@@ -1,12 +1,20 @@
 package jwt
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/markraiter/simple-blog/config"
 	"github.com/markraiter/simple-blog/internal/model"
+)
+
+var (
+	ErrTypeAssert            = errors.New("type assertion failed")
+	ErrInvalidSigningMethod  = errors.New("invalid signing method")
+	ErrInvalidToken          = errors.New("invalid token")
+	ErrNotFoundInTokenClaims = errors.New("not found in token claims")
 )
 
 type TokenPair struct {
@@ -25,12 +33,12 @@ func NewTokenPair(cfg config.Auth, user *model.User) (*TokenPair, error) {
 	accessExpire := time.Now().Add(cfg.AccessTTL)
 	refreshExpire := time.Now().Add(cfg.RefreshTTL)
 
-	accessToken, err := NewToken(cfg, *user, cfg.AccessTTL)
+	accessToken, err := NewToken(cfg, user, cfg.AccessTTL)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
 
-	refreshToken, err := NewToken(cfg, *user, cfg.RefreshTTL)
+	refreshToken, err := NewToken(cfg, user, cfg.RefreshTTL)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
@@ -48,45 +56,19 @@ func NewTokenPair(cfg config.Auth, user *model.User) (*TokenPair, error) {
 // NewToken generates new JWT token and returns signedString.
 //
 // In case of error occurs it throws an error.
-func NewToken(cfg config.Auth, user model.User, duration time.Duration) (string, error) {
+func NewToken(cfg config.Auth, user *model.User, duration time.Duration) (string, error) {
 	const operation = "jwt.NewToken"
 
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", model.ErrTypeAssert
+		return "", ErrTypeAssert
 	}
 
 	claims["uid"] = user.ID
 	claims["username"] = user.Username
 	claims["email"] = user.Email
-	claims["exp"] = time.Now().Add(duration).Unix()
-
-	tokenString, err := token.SignedString([]byte(cfg.SigningKey))
-	if err != nil {
-		return "", fmt.Errorf("%s: %w", operation, err)
-	}
-
-	return tokenString, nil
-}
-
-// NewRegisterToken generates new JWT token and returns signedString.
-//
-// In case of error occurs it throws an error.
-func NewRegisterToken(cfg config.Auth, user *model.User, duration time.Duration) (string, error) {
-	const operation = "jwt.NewRegisterToken"
-
-	token := jwt.New(jwt.SigningMethodHS256)
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return "", model.ErrTypeAssert
-	}
-
-	claims["username"] = user.Username
-	claims["email"] = user.Email
-	claims["password"] = user.Password
 	claims["exp"] = time.Now().Add(duration).Unix()
 
 	tokenString, err := token.SignedString([]byte(cfg.SigningKey))
@@ -104,7 +86,7 @@ func NewRegisterToken(cfg config.Auth, user *model.User, duration time.Duration)
 func ParseToken(tokenString, signingKey string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, model.ErrInvalidSigningMethod
+			return nil, ErrInvalidSigningMethod
 		}
 
 		return []byte(signingKey), nil
@@ -115,12 +97,12 @@ func ParseToken(tokenString, signingKey string) (string, error) {
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return "", model.ErrInvalidToken
+		return "", ErrInvalidToken
 	}
 
 	userID, ok := claims["uid"].(string)
 	if !ok {
-		return "", model.ErrNotFoundInTokenClaims
+		return "", ErrNotFoundInTokenClaims
 	}
 
 	return userID, nil

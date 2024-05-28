@@ -21,7 +21,7 @@ func TestNewToken(t *testing.T) {
 	}
 	duration := time.Minute
 
-	token, err := NewToken(cfg, user, duration)
+	token, err := NewToken(cfg, &user, duration)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 }
