@@ -46,9 +46,17 @@ func main() {
 
 	db := postgres.New(cfg.Postgres)
 
-	service := service.New(log, db)
+	service := service.New(
+		log,
+		db,
+		db,
+	)
 
-	handler := handler.New(log, validate, service)
+	handler := handler.New(
+		log,
+		validate,
+		service,
+	)
 
 	server := new(api.Server)
 

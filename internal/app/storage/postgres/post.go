@@ -2,8 +2,11 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/markraiter/simple-blog/internal/app/storage"
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
@@ -33,6 +36,10 @@ func (s *Storage) Post(ctx context.Context, id int) (*model.Post, error) {
 	err = row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CommentsCount)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+		}
+
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
 
@@ -74,6 +81,10 @@ func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
 
 	_, err := s.PostgresDB.Exec(query, post.Title, post.Content, post.ID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+		}
+
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
@@ -87,6 +98,10 @@ func (s *Storage) DeletePost(ctx context.Context, id int) error {
 
 	_, err := s.PostgresDB.Exec(query, id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+		}
+
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 

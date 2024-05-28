@@ -16,16 +16,33 @@ type AuthStorage interface {
 	UserProvider
 }
 
-type Service struct {
-	AuthService
+type PostStorage interface {
+	PostSaver
+	PostProvider
+	PostProcessor
 }
 
-func New(log *slog.Logger, auth AuthStorage) *Service {
+type Service struct {
+	AuthService
+	PostService
+}
+
+func New(
+	l *slog.Logger,
+	a AuthStorage,
+	p PostStorage,
+) *Service {
 	return &Service{
 		AuthService{
-			log:      log,
-			saver:    auth,
-			provider: auth,
+			log:      l,
+			saver:    a,
+			provider: a,
+		},
+		PostService{
+			log:       l,
+			saver:     p,
+			provider:  p,
+			processor: p,
 		},
 	}
 }
