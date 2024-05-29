@@ -30,8 +30,6 @@ definitions:
         maxLength: 50
         minLength: 3
         type: string
-      user_id:
-        type: integer
     required:
     - content
     - title

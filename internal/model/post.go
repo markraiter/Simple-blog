@@ -11,5 +11,4 @@ type Post struct {
 type PostRequest struct {
 	Title   string `json:"title" validate:"required,min=3,max=50" example:"title"`
 	Content string `json:"content" validate:"required,min=3" example:"lorem ipsum dolor sit amet ..."`
-	UserID  int    `json:"user_id"`
 }

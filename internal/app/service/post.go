@@ -31,13 +31,13 @@ type PostService struct {
 	processor PostProcessor
 }
 
-func (ps *PostService) SavePost(ctx context.Context, postReq *model.PostRequest) (int, error) {
+func (ps *PostService) SavePost(ctx context.Context, userID int, postReq *model.PostRequest) (int, error) {
 	const operation = "service.SavePost"
 
 	postModel := model.Post{
 		Title:   postReq.Title,
 		Content: postReq.Content,
-		UserID:  postReq.UserID,
+		UserID:  userID,
 	}
 
 	id, err := ps.saver.SavePost(ctx, &postModel)

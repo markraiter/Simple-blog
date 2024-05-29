@@ -12,6 +12,15 @@ import (
 	"github.com/markraiter/simple-blog/internal/lib/sl"
 )
 
+type contextKey string
+
+const (
+	UIDKey           contextKey = "uid"
+	RefreshStringKey contextKey = "refreshString"
+	EmailKey         contextKey = "email"
+	UsernameKey      contextKey = "username"
+)
+
 func BasicAuth(cfg config.Auth, log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -20,13 +29,6 @@ func BasicAuth(cfg config.Auth, log *slog.Logger) func(http.Handler) http.Handle
 			l := log.With(slog.String("operation", operation))
 
 			authHeader := r.Header.Get("Authorization")
-
-			type contextKey string
-
-			const uidKey contextKey = "uid"
-			const refreshStringKey contextKey = "refreshString"
-			const emailKey contextKey = "email"
-			const usernameKey contextKey = "username"
 
 			if authHeader == "" {
 				l.Warn("Authorization header is required")
@@ -48,10 +50,12 @@ func BasicAuth(cfg config.Auth, log *slog.Logger) func(http.Handler) http.Handle
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), uidKey, tokenClaims.UID)
-			ctx = context.WithValue(ctx, refreshStringKey, tokenString)
-			ctx = context.WithValue(ctx, emailKey, tokenClaims.Email)
-			ctx = context.WithValue(ctx, usernameKey, tokenClaims.Username)
+			ctx := context.WithValue(r.Context(), UIDKey, tokenClaims.UID)
+			ctx = context.WithValue(ctx, RefreshStringKey, tokenString)
+			ctx = context.WithValue(ctx, EmailKey, tokenClaims.Email)
+			ctx = context.WithValue(ctx, UsernameKey, tokenClaims.Username)
+
+			// spew.Dump(ctx)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

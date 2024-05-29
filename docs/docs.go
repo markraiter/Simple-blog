@@ -227,9 +227,6 @@ const docTemplate = `{
                     "maxLength": 50,
                     "minLength": 3,
                     "example": "title"
-                },
-                "user_id": {
-                    "type": "integer"
                 }
             }
         },
