@@ -152,6 +152,8 @@ paths:
           description: Internal server error
           schema:
             type: string
+      security:
+      - ApiKeyAuth: []
       summary: Create a post
       tags:
       - posts

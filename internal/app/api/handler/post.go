@@ -36,6 +36,7 @@ type PostHandler struct {
 
 // @Summary Create a post
 // @Description Create a post
+// @Security ApiKeyAuth
 // @Tags posts
 // @Accept json
 // @Produce json
@@ -51,8 +52,6 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 
 		log := ph.log.With(slog.String("operation", operation))
 
-		log.Debug("parsing request")
-
 		var postReq model.PostRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&postReq); err != nil {
@@ -62,16 +61,12 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		log.Debug("validating post")
-
 		if err := ph.validate.Struct(postReq); err != nil {
 			log.Warn("error validating post", sl.Err(err))
 			http.Error(w, "error validating post", http.StatusBadRequest)
 
 			return
 		}
-
-		log.Debug("saving post")
 
 		id, err := ph.saver.SavePost(ctx, &postReq)
 		if err != nil {
@@ -80,8 +75,6 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 
 			return
 		}
-
-		log.Debug("post saved")
 
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(strconv.Itoa(id)))

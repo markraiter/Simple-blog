@@ -34,22 +34,16 @@ type PostService struct {
 func (ps *PostService) SavePost(ctx context.Context, postReq *model.PostRequest) (int, error) {
 	const operation = "service.SavePost"
 
-	log := ps.log.With(slog.String("operation", operation))
-
 	postModel := model.Post{
 		Title:   postReq.Title,
 		Content: postReq.Content,
 		UserID:  postReq.UserID,
 	}
 
-	log.Debug("saving post")
-
 	id, err := ps.saver.SavePost(ctx, &postModel)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
-
-	log.Debug("post saved")
 
 	return id, nil
 }
@@ -78,16 +72,10 @@ func (ps *PostService) Post(ctx context.Context, id int) (*model.Post, error) {
 func (ps *PostService) Posts(ctx context.Context) ([]*model.Post, error) {
 	const operation = "service.Posts"
 
-	log := ps.log.With(slog.String("operation", operation))
-
-	log.Debug("getting posts")
-
 	posts, err := ps.provider.Posts(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
-
-	log.Debug("posts received")
 
 	return posts, nil
 }
