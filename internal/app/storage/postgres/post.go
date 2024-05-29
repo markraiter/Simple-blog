@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Storage) SavePost(ctx context.Context, post *model.Post) (int, error) {
-	const operation = "Storage.SavePost"
+	const operation = "storage.SavePost"
 
 	query := "INSERT INTO posts (title, content, user_id) VALUES ($1, $2, $3) RETURNING id"
 	err := s.PostgresDB.QueryRow(query, post.Title, post.Content, post.UserID).Scan(&post.ID)
@@ -23,7 +23,7 @@ func (s *Storage) SavePost(ctx context.Context, post *model.Post) (int, error) {
 }
 
 func (s *Storage) Post(ctx context.Context, id int) (*model.Post, error) {
-	const operation = "Storage.Post"
+	const operation = "storage.Post"
 
 	query, err := s.PostgresDB.Prepare("SELECT id, title, content, user_id, comments_count FROM posts WHERE id = $1")
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *Storage) Post(ctx context.Context, id int) (*model.Post, error) {
 }
 
 func (s *Storage) Posts(ctx context.Context) ([]*model.Post, error) {
-	const operation = "Storage.Posts"
+	const operation = "storage.Posts"
 
 	query, err := s.PostgresDB.Prepare("SELECT id, title, content, user_id, comments_count FROM posts")
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *Storage) Posts(ctx context.Context) ([]*model.Post, error) {
 }
 
 func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
-	const operation = "Storage.UpdatePost"
+	const operation = "storage.UpdatePost"
 
 	query := "UPDATE posts SET title = $1, content = $2 WHERE id = $3"
 
@@ -92,7 +92,7 @@ func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
 }
 
 func (s *Storage) DeletePost(ctx context.Context, id int) error {
-	const operation = "Storage.DeletePost"
+	const operation = "storage.DeletePost"
 
 	query := "DELETE FROM posts WHERE id = $1"
 

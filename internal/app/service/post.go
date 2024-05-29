@@ -31,8 +31,6 @@ type PostService struct {
 	processor PostProcessor
 }
 
-// implement the PostService methods here
-// SavePost, Post, Posts, UpdatePost, DeletePost
 func (ps *PostService) SavePost(ctx context.Context, postReq *model.PostRequest) (int, error) {
 	const operation = "service.SavePost"
 

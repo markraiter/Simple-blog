@@ -55,7 +55,8 @@ func main() {
 	handler := handler.New(
 		log,
 		validate,
-		service,
+		&service.AuthService,
+		&service.PostService,
 	)
 
 	server := new(api.Server)

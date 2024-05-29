@@ -1,6 +1,9 @@
 basePath: /
 definitions:
   handler.response:
+    properties:
+      message:
+        type: string
     type: object
   model.LoginRequest:
     properties:
@@ -15,6 +18,23 @@ definitions:
     required:
     - email
     - password
+    type: object
+  model.PostRequest:
+    properties:
+      content:
+        example: lorem ipsum dolor sit amet ...
+        minLength: 3
+        type: string
+      title:
+        example: title
+        maxLength: 50
+        minLength: 3
+        type: string
+      user_id:
+        type: integer
+    required:
+    - content
+    - title
     type: object
   model.UserRequest:
     properties:
@@ -45,7 +65,7 @@ info:
   title: Blog API
   version: "1.0"
 paths:
-  /auth/login:
+  /api/auth/login:
     post:
       consumes:
       - application/json
@@ -75,7 +95,7 @@ paths:
       summary: Login
       tags:
       - auth
-  /auth/register:
+  /api/auth/register:
     post:
       consumes:
       - application/json
@@ -105,6 +125,36 @@ paths:
       summary: Register user
       tags:
       - auth
+  /api/posts:
+    post:
+      consumes:
+      - application/json
+      description: Create a post
+      parameters:
+      - description: Post object that needs to be created
+        in: body
+        name: post
+        required: true
+        schema:
+          $ref: '#/definitions/model.PostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Post created
+          schema:
+            type: string
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a post
+      tags:
+      - posts
   /health:
     get:
       description: Healthcheck

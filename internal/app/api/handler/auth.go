@@ -36,7 +36,7 @@ type AuthHandler struct {
 // @Success 201 {string} string "User ID"
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
-// @Router /auth/register [post]
+// @Router /api/auth/register [post]
 func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -97,7 +97,7 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 // @Success 200 {string} string "Token"
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
-// @Router /auth/login [post]
+// @Router /api/auth/login [post]
 func (ah *AuthHandler) Login(ctx context.Context, cfg config.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const operation = "AuthHandler.Login"

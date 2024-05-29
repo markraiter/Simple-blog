@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Storage) SaveUser(ctx context.Context, user *model.User) (int, error) {
-	const operation = "Storage.SaveUser"
+	const operation = "storage.SaveUser"
 
 	query := "INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING id"
 	err := s.PostgresDB.QueryRow(query, user.Username, user.Password, user.Email).Scan(&user.ID)
@@ -30,7 +30,7 @@ func (s *Storage) SaveUser(ctx context.Context, user *model.User) (int, error) {
 }
 
 func (s *Storage) User(ctx context.Context, email string) (*model.User, error) {
-	const operation = "Storage.UserByEmail"
+	const operation = "storage.UserByEmail"
 
 	query, err := s.PostgresDB.Prepare("SELECT id, username, password, email FROM users WHERE email = $1")
 	if err != nil {
