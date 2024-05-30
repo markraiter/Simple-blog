@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"log/slog"
 )
 
 var (
@@ -28,18 +27,15 @@ type Service struct {
 }
 
 func New(
-	l *slog.Logger,
 	a AuthStorage,
 	p PostStorage,
 ) *Service {
 	return &Service{
 		AuthService{
-			log:      l,
 			saver:    a,
 			provider: a,
 		},
 		PostService{
-			log:       l,
 			saver:     p,
 			provider:  p,
 			processor: p,

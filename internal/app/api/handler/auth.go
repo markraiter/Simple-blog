@@ -44,44 +44,36 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 
 		log := ah.log.With(slog.String("operation", operation))
 
-		log.Debug("parsing request")
-
 		var userReq model.UserRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&userReq); err != nil {
 			log.Warn("error parsing request", sl.Err(err))
-			http.Error(w, "error parsing request", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
-
-		log.Debug("validating user")
 
 		if err := ah.validate.Struct(userReq); err != nil {
 			log.Warn("error validating user", sl.Err(err))
-			http.Error(w, "error validating user", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
-
-		log.Debug("registering user")
 
 		id, err := ah.service.RegisterUser(ctx, &userReq)
 		if err != nil {
 			if errors.Is(err, service.ErrAlreadyExists) {
 				log.Warn("user already exists", sl.Err(err))
-				http.Error(w, "user already exists", http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 
 				return
 			}
 
 			log.Error("error registering user", sl.Err(err))
-			http.Error(w, "error registering user", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
-
-		log.Debug("user registered")
 
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(strconv.Itoa(id)))
@@ -104,51 +96,43 @@ func (ah *AuthHandler) Login(ctx context.Context, cfg config.Auth) http.HandlerF
 
 		log := ah.log.With(slog.String("operation", operation))
 
-		log.Debug("parsing request")
-
 		var userReq model.LoginRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&userReq); err != nil {
 			log.Warn("error parsing request", sl.Err(err))
-			http.Error(w, "error parsing request", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
-
-		log.Debug("validating user")
 
 		if err := ah.validate.Struct(userReq); err != nil {
 			log.Warn("error validating user", sl.Err(err))
-			http.Error(w, "error validating user", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
-
-		log.Debug("logging in")
 
 		token, err := ah.service.Login(ctx, cfg, userReq.Email, userReq.Password)
 		if err != nil {
 			if errors.Is(err, service.ErrNotFound) {
 				log.Warn("user not found", sl.Err(err))
-				http.Error(w, "user not found", http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 
 				return
 			}
 
 			if errors.Is(err, service.ErrInvalidCredentials) {
 				log.Warn("invalid credentials", sl.Err(err))
-				http.Error(w, "invalid credentials", http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 
 				return
 			}
 
 			log.Error("error logging in", sl.Err(err))
-			http.Error(w, "error logging in", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
-
-		log.Debug("logged in")
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(token)

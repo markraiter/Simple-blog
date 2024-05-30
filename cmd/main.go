@@ -47,7 +47,6 @@ func main() {
 	db := postgres.New(cfg.Postgres)
 
 	service := service.New(
-		log,
 		db,
 		db,
 	)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/markraiter/simple-blog/config"
 	"github.com/markraiter/simple-blog/internal/app/storage"
@@ -22,17 +21,12 @@ type UserProvider interface {
 }
 
 type AuthService struct {
-	log      *slog.Logger
 	saver    UserSaver
 	provider UserProvider
 }
 
 func (as *AuthService) RegisterUser(ctx context.Context, user *model.UserRequest) (int, error) {
-	const operation = "AuthService.RegisterUser"
-
-	log := as.log.With(slog.String("operation", operation))
-
-	log.Debug("hashing password")
+	const operation = "service.RegisterUser"
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -45,8 +39,6 @@ func (as *AuthService) RegisterUser(ctx context.Context, user *model.UserRequest
 		Email:    user.Email,
 	}
 
-	log.Debug("saving user")
-
 	id, err := as.saver.SaveUser(ctx, &userResp)
 	if err != nil {
 		if errors.Is(err, storage.ErrAlreadyExists) {
@@ -56,17 +48,11 @@ func (as *AuthService) RegisterUser(ctx context.Context, user *model.UserRequest
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
 
-	log.Debug("user saved")
-
 	return id, nil
 }
 
 func (as *AuthService) Login(ctx context.Context, cfg config.Auth, email, password string) (string, error) {
-	const operation = "AuthService.Login"
-
-	log := as.log.With(slog.String("operation", operation))
-
-	log.Debug("getting user")
+	const operation = "service.Login"
 
 	user, err := as.provider.User(ctx, email)
 	if err != nil {
@@ -77,8 +63,6 @@ func (as *AuthService) Login(ctx context.Context, cfg config.Auth, email, passwo
 		return "", fmt.Errorf("%s: %w", operation, err)
 	}
 
-	log.Debug("comparing passwords")
-
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return "", fmt.Errorf("%s: %w", operation, ErrInvalidCredentials)
 	}
@@ -87,8 +71,6 @@ func (as *AuthService) Login(ctx context.Context, cfg config.Auth, email, passwo
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", operation, err)
 	}
-
-	log.Debug("user logged in")
 
 	return token, nil
 }
