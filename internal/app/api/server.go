@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/markraiter/simple-blog/config"
@@ -9,6 +10,13 @@ import (
 
 type Server struct {
 	HTTPServer *http.Server
+	logger     *slog.Logger
+}
+
+func New(logger *slog.Logger) *Server {
+	return &Server{
+		logger: logger,
+	}
 }
 
 func (s *Server) Run(cfg *config.Config, handler http.Handler) error {

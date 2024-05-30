@@ -58,10 +58,14 @@ func main() {
 		&service.PostService,
 	)
 
-	server := new(api.Server)
+	server := api.New(log)
+
+	router := handler.Router(ctx, *cfg, log)
+
+	handlerWithMiddlewareLogger := middleware.LoggerMiddleware(log)(router)
 
 	go func() {
-		if err := server.Run(cfg, handler.Router(ctx, *cfg, log)); err != nil {
+		if err := server.Run(cfg, handlerWithMiddlewareLogger); err != nil {
 			panic("error occured while running the server: " + err.Error())
 		}
 	}()

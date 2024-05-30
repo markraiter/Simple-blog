@@ -40,7 +40,7 @@ type AuthHandler struct {
 func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		const operation = "AuthHandler.RegisterUser"
+		const operation = "handler.RegisterUser"
 
 		log := ah.log.With(slog.String("operation", operation))
 
@@ -92,7 +92,7 @@ func (ah *AuthHandler) RegisterUser(ctx context.Context) http.HandlerFunc {
 // @Router /api/auth/login [post]
 func (ah *AuthHandler) Login(ctx context.Context, cfg config.Auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const operation = "AuthHandler.Login"
+		const operation = "handler.Login"
 
 		log := ah.log.With(slog.String("operation", operation))
 

@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
+	"time"
 )
 
 func SetupLogger(env string) *slog.Logger {
@@ -16,4 +18,40 @@ func SetupLogger(env string) *slog.Logger {
 	}
 
 	return log
+}
+
+func LoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			wrapped := wrapResponseWriter(w)
+			next.ServeHTTP(wrapped, r)
+			duration := time.Since(start)
+
+			logger.Info(
+				"HTTP request",
+				// slog.String("timestamp", start.Format("15:04:05")),
+				slog.Int("status", wrapped.status),
+				slog.String("duration", duration.String()),
+				slog.String("client_ip", r.RemoteAddr),
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
+			)
+		})
+	}
+}
+
+// responseWriterWrapper обертка для http.ResponseWriter для захвата статуса ответа
+type responseWriterWrapper struct {
+	http.ResponseWriter
+	status int
+}
+
+func wrapResponseWriter(w http.ResponseWriter) *responseWriterWrapper {
+	return &responseWriterWrapper{ResponseWriter: w, status: http.StatusOK}
+}
+
+func (rw *responseWriterWrapper) WriteHeader(statusCode int) {
+	rw.status = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
 }
