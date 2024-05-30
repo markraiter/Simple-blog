@@ -30,7 +30,6 @@ func LoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 
 			logger.Info(
 				"HTTP request",
-				// slog.String("timestamp", start.Format("15:04:05")),
 				slog.Int("status", wrapped.status),
 				slog.String("duration", duration.String()),
 				slog.String("client_ip", r.RemoteAddr),
