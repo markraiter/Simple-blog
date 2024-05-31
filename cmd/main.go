@@ -36,10 +36,10 @@ func main() {
 	log := middleware.SetupLogger(cfg.Env)
 
 	validate := validator.New()
-	validate.RegisterValidation("number", model.ValidateContainsNumber, false)
-	validate.RegisterValidation("upper", model.ValidateContainsUpper, false)
-	validate.RegisterValidation("lower", model.ValidateContainsLower, false)
-	validate.RegisterValidation("special", model.ValidateContainsSpecial, false)
+    validate.RegisterValidation("number", model.ValidateContainsNumber, false)   // nolint:errcheck
+	validate.RegisterValidation("upper", model.ValidateContainsUpper, false)     // nolint:errcheck
+	validate.RegisterValidation("lower", model.ValidateContainsLower, false)     // nolint:errcheck
+	validate.RegisterValidation("special", model.ValidateContainsSpecial, false) // nolint:errcheck
 
 	log.Info("starting application...")
 	log.Info("port: " + cfg.Server.Port)
@@ -81,3 +81,4 @@ func main() {
 		log.Error("error occured while shutting down the server: " + err.Error())
 	}
 }
+

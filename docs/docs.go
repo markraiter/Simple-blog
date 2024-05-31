@@ -161,6 +161,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/posts/{id}": {
+            "get": {
+                "description": "Get a Post",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Get a Post",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Post ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Post"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Healthcheck",
@@ -207,6 +251,36 @@ const docTemplate = `{
                     "maxLength": 50,
                     "minLength": 8,
                     "example": "Password12345!"
+                }
+            }
+        },
+        "model.Post": {
+            "type": "object",
+            "required": [
+                "content",
+                "title"
+            ],
+            "properties": {
+                "comments_count": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "content": {
+                    "type": "string",
+                    "minLength": 3,
+                    "example": "lorem ipsum dolor sit amet ..."
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "title"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },

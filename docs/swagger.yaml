@@ -19,6 +19,28 @@ definitions:
     - email
     - password
     type: object
+  model.Post:
+    properties:
+      comments_count:
+        example: 0
+        type: integer
+      content:
+        example: lorem ipsum dolor sit amet ...
+        minLength: 3
+        type: string
+      id:
+        type: integer
+      title:
+        example: title
+        maxLength: 50
+        minLength: 3
+        type: string
+      user_id:
+        type: integer
+    required:
+    - content
+    - title
+    type: object
   model.PostRequest:
     properties:
       content:
@@ -153,6 +175,35 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create a post
+      tags:
+      - posts
+  /api/posts/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a Post
+      parameters:
+      - description: Post ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Post'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get a Post
       tags:
       - posts
   /health:

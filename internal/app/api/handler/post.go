@@ -3,12 +3,14 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/go-playground/validator"
 	"github.com/markraiter/simple-blog/internal/app/api/middleware"
+	"github.com/markraiter/simple-blog/internal/app/service"
 	"github.com/markraiter/simple-blog/internal/lib/sl"
 	"github.com/markraiter/simple-blog/internal/model"
 )
@@ -65,21 +67,21 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 		userID, err := strconv.Atoi(userIDStr)
 		if err != nil {
 			log.Warn("error parsing userID", sl.Err(err))
-			http.Error(w, "error parsing userID", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&postReq); err != nil {
 			log.Warn("error parsing request", sl.Err(err))
-			http.Error(w, "error parsing request", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
 		if err := ph.validate.Struct(postReq); err != nil {
 			log.Warn("error validating post", sl.Err(err))
-			http.Error(w, "error validating post", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
@@ -87,12 +89,72 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 		id, err := ph.saver.SavePost(ctx, userID, &postReq)
 		if err != nil {
 			log.Error("error saving post", sl.Err(err))
-			http.Error(w, "error saving post", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
+        w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(strconv.Itoa(id)))
 	}
+}
+
+// @Summary Get a Post
+// @Description Get a Post
+// @Tags posts
+// @Accept json
+// @Produce json
+// @Param id query int true "Post ID"
+// @Success 200 {object} model.Post
+// @Failure 400 {string} string "Invalid request"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/posts/{id} [get]
+func (ph *PostHandler) Post(ctx context.Context) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        const operation = "handler.GetPost"
+
+        log := ph.log.With(slog.String("operation", operation))
+
+        idStr := r.URL.Query().Get("id")
+        if idStr == "" {
+            log.Warn("error getting id from query")
+            http.Error(w, "error getting id from query", http.StatusBadRequest)
+
+            return
+        }
+
+        id, err := strconv.Atoi(idStr)
+        if err != nil {
+            log.Warn("error parsing id", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusBadRequest)
+
+            return
+        }
+
+        post, err := ph.provider.Post(ctx, id)
+        if err != nil {
+            if errors.Is(err, service.ErrNotFound) {
+                log.Warn("post not found", sl.Err(err))
+                http.Error(w, err.Error(), http.StatusNotFound)
+
+                return
+            }
+
+            log.Error("error getting post", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+
+        if err := json.NewEncoder(w).Encode(post); err != nil {
+            log.Error("error encoding post", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+
+            return
+        }
+    }
 }
