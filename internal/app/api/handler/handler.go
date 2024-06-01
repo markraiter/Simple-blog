@@ -69,7 +69,7 @@ func (h *Handler) Router(ctx context.Context, cfg config.Config, log *slog.Logge
 
 	{
 		m.Handle("POST /api/posts", basicAuth(h.CreatePost(ctx)))
-		// m.Handle("GET api/posts", h.GetPosts(ctx))
+		m.Handle("GET /api/posts", h.Posts(ctx))
         m.Handle("GET /api/posts/{id}", h.Post(ctx))
 		// m.Handle("PUT api/posts/{id}", h.UpdatePost(ctx))
 		// m.Handle("DELETE api/posts/{id}", h.DeletePost(ctx))

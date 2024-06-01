@@ -146,6 +146,26 @@ paths:
       tags:
       - auth
   /api/posts:
+    get:
+      consumes:
+      - application/json
+      description: Get Posts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Post'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Posts
+      tags:
+      - posts
     post:
       consumes:
       - application/json

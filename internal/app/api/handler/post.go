@@ -158,3 +158,37 @@ func (ph *PostHandler) Post(ctx context.Context) http.HandlerFunc {
         }
     }
 }
+
+// @Summary Get Posts
+// @Description Get Posts
+// @Tags posts
+// @Accept json
+// @Produce json
+// @Success 200 {array} model.Post
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/posts [get]
+func (ph *PostHandler) Posts(ctx context.Context) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        const operation = "handler.GetPosts"
+
+        log := ph.log.With(slog.String("operation", operation))
+
+        posts, err := ph.provider.Posts(ctx)
+        if err != nil {
+            log.Error("error getting posts", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+
+        if err := json.NewEncoder(w).Encode(posts); err != nil {
+            log.Error("error encoding posts", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+
+            return
+        }
+    }
+}
