@@ -226,6 +226,46 @@ paths:
       summary: Get a Post
       tags:
       - posts
+    put:
+      consumes:
+      - application/json
+      description: Update a UpdatePost
+      parameters:
+      - description: Post ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Post object that needs to be updated
+        in: body
+        name: post
+        required: true
+        schema:
+          $ref: '#/definitions/model.PostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post updated
+          schema:
+            type: string
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: Post not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a UpdatePost
+      tags:
+      - posts
   /health:
     get:
       description: Healthcheck
