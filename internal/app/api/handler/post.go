@@ -25,8 +25,8 @@ type PostProvider interface {
 }
 
 type PostProcessor interface {
-	UpdatePost(ctx context.Context, id int, postReq *model.PostRequest) error
-	DeletePost(ctx context.Context, id int) error
+	UpdatePost(ctx context.Context, postID, userID int, postReq *model.PostRequest) error
+	DeletePost(ctx context.Context, postID, userID int) error
 }
 
 type PostHandler struct {
@@ -203,6 +203,7 @@ func (ph *PostHandler) Posts(ctx context.Context) http.HandlerFunc {
 // @Param post body model.PostRequest true "Post object that needs to be updated"
 // @Success 200 {string} string "Post updated"
 // @Failure 400 {string} string "Invalid request"
+// @Failure 403 {string} string "User is not the owner of the post"
 // @Failure 404 {string} string "Post not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/posts/{id} [put]
@@ -212,15 +213,31 @@ func (ph *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
 
         log := ph.log.With(slog.String("operation", operation))
 
-        idStr := r.URL.Query().Get("id")
-        if idStr == "" {
+        userIDStr, ok := r.Context().Value(middleware.UIDKey).(string)
+        if !ok {
+            log.Warn("error getting userID from context")
+            http.Error(w, "error getting userID from context", http.StatusInternalServerError)
+
+            return
+        }
+
+        userID, err := strconv.Atoi(userIDStr)
+        if err != nil {
+            log.Warn("error parsing userID", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+
+            return
+        }
+
+        postIDStr := r.URL.Query().Get("id")
+        if postIDStr == "" {
             log.Warn("error getting id from query")
             http.Error(w, "error getting id from query", http.StatusBadRequest)
 
             return
         }
 
-        id, err := strconv.Atoi(idStr)
+        postID, err := strconv.Atoi(postIDStr)
         if err != nil {
             log.Warn("error parsing id", sl.Err(err))
             http.Error(w, err.Error(), http.StatusBadRequest)
@@ -243,8 +260,15 @@ func (ph *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
             return
         }
 
-        err = ph.processor.UpdatePost(ctx, id, &postReq)
+        err = ph.processor.UpdatePost(ctx, postID, userID, &postReq)
         if err != nil {
+            if errors.Is(err, service.ErrNotAllowed) {
+                log.Warn("user is not allowed to perform this operation", sl.Err(err))
+                http.Error(w, err.Error(), http.StatusForbidden)
+
+                return
+            }
+
             if errors.Is(err, service.ErrNotFound) {
                 log.Warn("post not found", sl.Err(err))
                 http.Error(w, err.Error(), http.StatusNotFound)
@@ -273,6 +297,7 @@ func (ph *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
 // @Param id query int true "Post ID"
 // @Success 200 {string} string "Post deleted"
 // @Failure 400 {string} string "Invalid request"
+// @Failure 403 {string} string "User is not the owner of the post"
 // @Failure 404 {string} string "Post not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/posts/{id} [delete]
@@ -282,6 +307,22 @@ func (hp *PostHandler) DeletePost(ctx context.Context) http.HandlerFunc {
 
         log := hp.log.With(slog.String("operation", operation))
 
+        userIDStr, ok := r.Context().Value(middleware.UIDKey).(string)
+        if !ok {
+            log.Warn("error getting userID from context")
+            http.Error(w, "error getting userID from context", http.StatusInternalServerError)
+
+            return
+        }
+
+        userID, err := strconv.Atoi(userIDStr)
+        if err != nil {
+            log.Warn("error parsing userID", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+
+            return
+        }
+
         idStr := r.URL.Query().Get("id")
         if idStr == "" {
             log.Warn("error getting id from query")
@@ -290,7 +331,7 @@ func (hp *PostHandler) DeletePost(ctx context.Context) http.HandlerFunc {
             return
         }
 
-        id, err := strconv.Atoi(idStr)
+        postID, err := strconv.Atoi(idStr)
         if err != nil {
             log.Warn("error parsing id", sl.Err(err))
             http.Error(w, err.Error(), http.StatusBadRequest)
@@ -298,8 +339,15 @@ func (hp *PostHandler) DeletePost(ctx context.Context) http.HandlerFunc {
             return
         }
 
-        err = hp.processor.DeletePost(ctx, id)
+        err = hp.processor.DeletePost(ctx, postID, userID)
         if err != nil {
+            if errors.Is(err, service.ErrNotAllowed) {
+                log.Warn("user is not allowed to perform this operation", sl.Err(err))
+                http.Error(w, err.Error(), http.StatusForbidden)
+
+                return
+            }
+
             if errors.Is(err, service.ErrNotFound) {
                 log.Warn("post not found", sl.Err(err))
                 http.Error(w, err.Error(), http.StatusNotFound)

@@ -72,16 +72,25 @@ func (ps *PostService) Posts(ctx context.Context) ([]*model.Post, error) {
 	return posts, nil
 }
 
-func (ps *PostService) UpdatePost(ctx context.Context, id int, postReq *model.PostRequest) error {
+func (ps *PostService) UpdatePost(ctx context.Context, postID, userID int, postReq *model.PostRequest) error {
 	const operation = "service.UpdatePost"
 
+    post, err := ps.provider.Post(ctx, postID)
+    if err != nil {
+        return fmt.Errorf("%s: %w", operation, err)
+    }
+
+    if post.UserID != userID {
+        return fmt.Errorf("%s: %w", operation, ErrNotAllowed)
+    }
+
 	postModel := model.Post{
-		ID:      id,
+		ID:      postID,
 		Title:   postReq.Title,
 		Content: postReq.Content,
 	}
 
-	err := ps.processor.UpdatePost(ctx, &postModel)
+	err = ps.processor.UpdatePost(ctx, &postModel)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return fmt.Errorf("%s: %w", operation, ErrNotFound)
@@ -93,10 +102,19 @@ func (ps *PostService) UpdatePost(ctx context.Context, id int, postReq *model.Po
 	return nil
 }
 
-func (ps *PostService) DeletePost(ctx context.Context, id int) error {
+func (ps *PostService) DeletePost(ctx context.Context, postID, userID int) error {
 	const operation = "service.DeletePost"
 
-	err := ps.processor.DeletePost(ctx, id)
+    post, err := ps.provider.Post(ctx, postID)
+    if err != nil {
+        return fmt.Errorf("%s: %w", operation, err)
+    }
+
+    if post.UserID != userID {
+        return fmt.Errorf("%s: %w", operation, ErrNotAllowed)
+    }
+
+	err = ps.processor.DeletePost(ctx, postID)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return fmt.Errorf("%s: %w", operation, ErrNotFound)

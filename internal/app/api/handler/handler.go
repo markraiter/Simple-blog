@@ -75,5 +75,13 @@ func (h *Handler) Router(ctx context.Context, cfg config.Config, log *slog.Logge
 		m.Handle("DELETE /api/posts/{id}",basicAuth(h.DeletePost(ctx)))
 	}
 
+    {
+        // m.Handle("POST /api/comments", basicAuth(h.CreateComment(ctx)))
+        // m.Handle("GET /api/comments", h.Comments(ctx))
+        // m.Handle("GET /api/comments/{id}", h.Comment(ctx))
+        // m.Handle("PUT /api/comments/{id}", basicAuth(h.UpdateComment(ctx)))
+        // m.Handle("DELETE /api/comments/{id}", basicAuth(h.DeleteComment(ctx)))
+    }
+
 	return m
 }
