@@ -49,7 +49,7 @@ func (s *Storage) Post(ctx context.Context, id int) (*model.Post, error) {
 func (s *Storage) Posts(ctx context.Context) ([]*model.Post, error) {
 	const operation = "storage.Posts"
 
-	query, err := s.PostgresDB.Prepare("SELECT id, title, content, user_id, comments_count FROM posts")
+	query, err := s.PostgresDB.Prepare("SELECT id, title, content, user_id, comments_count FROM posts ORDER BY created_at")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}

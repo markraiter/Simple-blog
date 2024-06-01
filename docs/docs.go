@@ -240,7 +240,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Update a UpdatePost",
+                "description": "Update a post",
                 "consumes": [
                     "application/json"
                 ],
@@ -250,7 +250,7 @@ const docTemplate = `{
                 "tags": [
                     "posts"
                 ],
-                "summary": "Update a UpdatePost",
+                "summary": "Update a post",
                 "parameters": [
                     {
                         "type": "integer",
@@ -272,6 +272,59 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Post updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Post not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a Post",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Delete a Post",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Post ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Post deleted",
                         "schema": {
                             "type": "string"
                         }

@@ -198,6 +198,40 @@ paths:
       tags:
       - posts
   /api/posts/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a Post
+      parameters:
+      - description: Post ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post deleted
+          schema:
+            type: string
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: Post not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a Post
+      tags:
+      - posts
     get:
       consumes:
       - application/json
@@ -229,7 +263,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update a UpdatePost
+      description: Update a post
       parameters:
       - description: Post ID
         in: query
@@ -263,7 +297,7 @@ paths:
             type: string
       security:
       - ApiKeyAuth: []
-      summary: Update a UpdatePost
+      summary: Update a post
       tags:
       - posts
   /health:

@@ -193,8 +193,8 @@ func (ph *PostHandler) Posts(ctx context.Context) http.HandlerFunc {
     }
 }
 
-// @Summary Update a UpdatePost
-// @Description Update a UpdatePost
+// @Summary Update a post
+// @Description Update a post
 // @Security ApiKeyAuth
 // @Tags posts
 // @Accept json
@@ -261,5 +261,60 @@ func (ph *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
         w.WriteHeader(http.StatusOK)
         w.Header().Set("Content-Type", "application/json")
         w.Write([]byte("Post updated")) //nolint:errcheck
+    }
+}
+
+// @Summary Delete a Post
+// @Description Delete a Post
+// @Security ApiKeyAuth
+// @Tags posts
+// @Accept json
+// @Produce json
+// @Param id query int true "Post ID"
+// @Success 200 {string} string "Post deleted"
+// @Failure 400 {string} string "Invalid request"
+// @Failure 404 {string} string "Post not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/posts/{id} [delete]
+func (hp *PostHandler) DeletePost(ctx context.Context) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        const operation = "handler.DeletePost"
+
+        log := hp.log.With(slog.String("operation", operation))
+
+        idStr := r.URL.Query().Get("id")
+        if idStr == "" {
+            log.Warn("error getting id from query")
+            http.Error(w, "error getting id from query", http.StatusBadRequest)
+
+            return
+        }
+
+        id, err := strconv.Atoi(idStr)
+        if err != nil {
+            log.Warn("error parsing id", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusBadRequest)
+
+            return
+        }
+
+        err = hp.processor.DeletePost(ctx, id)
+        if err != nil {
+            if errors.Is(err, service.ErrNotFound) {
+                log.Warn("post not found", sl.Err(err))
+                http.Error(w, err.Error(), http.StatusNotFound)
+
+                return
+            }
+
+            log.Error("error deleting post", sl.Err(err))
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+
+            return
+        }
+
+        w.WriteHeader(http.StatusOK)
+        w.Header().Set("Content-Type", "application/json")
+        w.Write([]byte("Post deleted")) //nolint:errcheck
     }
 }
