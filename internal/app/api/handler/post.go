@@ -213,21 +213,7 @@ func (ph *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
 
         log := ph.log.With(slog.String("operation", operation))
 
-        userIDStr, ok := r.Context().Value(middleware.UIDKey).(string)
-        if !ok {
-            log.Warn("error getting userID from context")
-            http.Error(w, "error getting userID from context", http.StatusInternalServerError)
-
-            return
-        }
-
-        userID, err := strconv.Atoi(userIDStr)
-        if err != nil {
-            log.Warn("error parsing userID", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-
-            return
-        }
+        userID := middleware.GetUserIDFromCtx(r.Context())
 
         postIDStr := r.URL.Query().Get("id")
         if postIDStr == "" {
@@ -307,21 +293,7 @@ func (hp *PostHandler) DeletePost(ctx context.Context) http.HandlerFunc {
 
         log := hp.log.With(slog.String("operation", operation))
 
-        userIDStr, ok := r.Context().Value(middleware.UIDKey).(string)
-        if !ok {
-            log.Warn("error getting userID from context")
-            http.Error(w, "error getting userID from context", http.StatusInternalServerError)
-
-            return
-        }
-
-        userID, err := strconv.Atoi(userIDStr)
-        if err != nil {
-            log.Warn("error parsing userID", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-
-            return
-        }
+        userID := middleware.GetUserIDFromCtx(r.Context())
 
         idStr := r.URL.Query().Get("id")
         if idStr == "" {
