@@ -20,6 +20,8 @@ tasks:
       - migrate -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=${POSTGRES_SSL_MODE}" -path internal/app/storage/postgres/migrations/ down
 
   test:
+    aliases:
+      - t
     cmds:
       - go test ./...
 
