@@ -134,3 +134,37 @@ func (s *Storage) DeletePost(ctx context.Context, postID, userID int) error {
 
     return nil
 }
+
+// func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
+// 	const operation = "storage.UpdatePost"
+//
+// 	query := "UPDATE posts SET title = $1, content = $2 WHERE id = $3"
+//
+// 	_, err := s.PostgresDB.Exec(query, post.Title, post.Content, post.ID)
+// 	if err != nil {
+// 		if errors.Is(err, sql.ErrNoRows) {
+// 			return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+// 		}
+//
+// 		return fmt.Errorf("%s: %w", operation, err)
+// 	}
+//
+// 	return nil
+// }
+//
+// func (s *Storage) DeletePost(ctx context.Context, id int) error {
+// 	const operation = "storage.DeletePost"
+//
+// 	query := "DELETE FROM posts WHERE id = $1"
+//
+// 	_, err := s.PostgresDB.Exec(query, id)
+// 	if err != nil {
+// 		if errors.Is(err, sql.ErrNoRows) {
+// 			return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+// 		}
+//
+// 		return fmt.Errorf("%s: %w", operation, err)
+// 	}
+//
+// 	return nil
+// }
