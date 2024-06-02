@@ -20,7 +20,7 @@ type PostProvider interface {
 
 type PostProcessor interface {
 	UpdatePost(ctx context.Context, post *model.Post) error
-	DeletePost(ctx context.Context, id int) error
+	DeletePost(ctx context.Context, postID, userID int) error
 }
 
 type PostService struct {
@@ -75,26 +75,22 @@ func (ps *PostService) Posts(ctx context.Context) ([]*model.Post, error) {
 func (ps *PostService) UpdatePost(ctx context.Context, postID, userID int, postReq *model.PostRequest) error {
 	const operation = "service.UpdatePost"
 
-    post, err := ps.provider.Post(ctx, postID)
-    if err != nil {
-        return fmt.Errorf("%s: %w", operation, err)
-    }
-
-    if post.UserID != userID {
-        return fmt.Errorf("%s: %w", operation, ErrNotAllowed)
-    }
-
 	postModel := model.Post{
 		ID:      postID,
 		Title:   postReq.Title,
 		Content: postReq.Content,
+        UserID:  userID,
 	}
 
-	err = ps.processor.UpdatePost(ctx, &postModel)
+    err := ps.processor.UpdatePost(ctx, &postModel)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return fmt.Errorf("%s: %w", operation, ErrNotFound)
 		}
+
+        if errors.Is(err, storage.ErrNotAllowed) {
+            return fmt.Errorf("%s: %w", operation, ErrNotAllowed)
+        }
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
@@ -105,20 +101,15 @@ func (ps *PostService) UpdatePost(ctx context.Context, postID, userID int, postR
 func (ps *PostService) DeletePost(ctx context.Context, postID, userID int) error {
 	const operation = "service.DeletePost"
 
-    post, err := ps.provider.Post(ctx, postID)
-    if err != nil {
-        return fmt.Errorf("%s: %w", operation, err)
-    }
-
-    if post.UserID != userID {
-        return fmt.Errorf("%s: %w", operation, ErrNotAllowed)
-    }
-
-	err = ps.processor.DeletePost(ctx, postID)
+    err := ps.processor.DeletePost(ctx, postID, userID)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return fmt.Errorf("%s: %w", operation, ErrNotFound)
 		}
+
+        if errors.Is(err, storage.ErrNotAllowed) {
+            return fmt.Errorf("%s: %w", operation, ErrNotAllowed)
+        }
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}

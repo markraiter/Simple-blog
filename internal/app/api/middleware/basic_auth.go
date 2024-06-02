@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/markraiter/simple-blog/config"
@@ -60,4 +61,45 @@ func BasicAuth(cfg config.Auth, log *slog.Logger) func(http.Handler) http.Handle
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func GetUserIDFromCtx(ctx context.Context) int {
+    userIDStr, ok := ctx.Value(UIDKey).(string)
+    if !ok {
+        return 0
+    }
+
+    userID, err := strconv.Atoi(userIDStr)
+    if err != nil {
+        return 0
+    }
+
+    return userID
+}
+
+func GetRefreshStringFromCtx(ctx context.Context) string {
+    refreshString, ok := ctx.Value(RefreshStringKey).(string)
+    if !ok {
+        return ""
+    }
+
+    return refreshString
+}
+
+func GetEmailFromCtx(ctx context.Context) string {
+    email, ok := ctx.Value(EmailKey).(string)
+    if !ok {
+        return ""
+    }
+
+    return email
+}
+
+func GetUsernameFromCtx(ctx context.Context) string {
+    username, ok := ctx.Value(UsernameKey).(string)
+    if !ok {
+        return ""
+    }
+
+    return username
 }
