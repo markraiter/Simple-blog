@@ -25,6 +25,18 @@ tasks:
     cmds:
       - go test ./...
 
+  coverge:
+    aliases:
+      - c
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - xdg-open coverage.html
+
+  rmcov:
+    cmds:
+      - rm coverage.out coverage.html
+
   swaginit:
     cmds:
       - swag init --outputTypes go,yaml -g cmd/main.go internal/model
