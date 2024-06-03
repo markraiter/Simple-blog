@@ -233,3 +233,45 @@ func TestPosts(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdatePost(t *testing.T) {
+    storage, mock, closeDB := prepareStorage(t)
+    defer closeDB()
+
+    tests := []struct {
+        name    string
+        post    *model.Post
+        mock    func()
+        wantErr bool
+    }{
+        {
+            name: "Success",
+            post: &model.Post{
+                ID:      1,
+                Title:   "Updated Title",
+                Content: "Updated Content",
+                UserID:  1,
+            },
+            mock: func() {
+                mock.ExpectQuery("UPDATE posts SET title = \\$1, content = \\$2 WHERE id = \\$3 AND user_id = \\$4").
+                    WithArgs("Updated Title", "Updated Content", 1, 1).
+                    WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+            },
+            wantErr: false,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            tt.mock()
+            ctx := context.Background()
+            err := storage.UpdatePost(ctx, tt.post)
+
+            assert.Equal(t, tt.wantErr, err != nil)
+
+            if err := mock.ExpectationsWereMet(); err != nil {
+                t.Errorf("there were unfulfilled expectations: %s", err)
+            }
+        })
+    }
+}
