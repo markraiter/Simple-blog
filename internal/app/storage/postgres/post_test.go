@@ -326,3 +326,83 @@ func TestUpdatePost(t *testing.T) {
         })
     }
 }
+
+func TestDeletePost(t *testing.T) {
+    storage, mock, closeDB := prepareStorage(t)
+    defer closeDB()
+
+    tests := []struct {
+        name    string
+        postID  int
+        userID  int
+        mock    func()
+        wantErr bool
+        err     error
+    }{
+        {
+            name:   "Success",
+            postID: 1,
+            userID: 1,
+            mock: func() {
+                mock.ExpectQuery("DELETE FROM posts WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+                    WithArgs(1, 1).
+                    WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+            },
+            wantErr: false,
+            err:     nil,
+        },
+        {
+            name:   "Post Not Found",
+            postID: 2,
+            userID: 1,
+            mock: func() {
+                mock.ExpectQuery("DELETE FROM posts WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+                    WithArgs(2, 1).
+                    WillReturnError(sql.ErrNoRows)
+
+                mock.ExpectQuery("SELECT id FROM posts WHERE id = \\$1").
+                    WithArgs(2).
+                    WillReturnError(sql.ErrNoRows)
+            },
+            wantErr: true,
+            err:     st.ErrNotFound,
+        },
+        {
+            name:   "User Not Allowed",
+            postID: 3,
+            userID: 1,
+            mock: func() {
+                mock.ExpectQuery("DELETE FROM posts WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+                    WithArgs(3, 1).
+                    WillReturnError(sql.ErrNoRows)
+
+                mock.ExpectQuery("SELECT id FROM posts WHERE id = \\$1").
+                    WithArgs(3).
+                    WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(3))
+            },
+            wantErr: true,
+            err:     st.ErrNotAllowed,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            tt.mock()
+            ctx := context.Background()
+            err := storage.DeletePost(ctx, tt.postID, tt.userID)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                if !errors.Is(err, tt.err) {
+                    t.Errorf("expected error: %v, got: %v", tt.err, err)
+                }
+            } else {
+                assert.NoError(t, err)
+            }
+
+            if err := mock.ExpectationsWereMet(); err != nil {
+                t.Errorf("there were unfulfilled expectations: %s", err)
+            }
+        })
+    }
+}
