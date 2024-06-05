@@ -35,6 +35,7 @@ func TestSavePost(t *testing.T) {
 		mock    func()
 		wantID  int
 		wantErr bool
+        err    error
 	}{
 		{
 			name: "Success",
@@ -50,6 +51,7 @@ func TestSavePost(t *testing.T) {
 			},
 			wantID:  1,
 			wantErr: false,
+            err:     nil,
 		},
 		{
 			name: "Null value for userID",
@@ -64,6 +66,7 @@ func TestSavePost(t *testing.T) {
 			},
 			wantID:  0,
 			wantErr: true,
+            err:     sql.ErrNoRows,
 		},
 		{
 			name: "Null value for title",
@@ -78,6 +81,7 @@ func TestSavePost(t *testing.T) {
 			},
 			wantID:  0,
 			wantErr: true,
+            err:     sql.ErrNoRows,
 		},
 		{
 			name: "Null value for content",
@@ -92,6 +96,7 @@ func TestSavePost(t *testing.T) {
 			},
 			wantID:  0,
 			wantErr: true,
+            err:     sql.ErrNoRows,
 		},
 	}
 
@@ -101,12 +106,19 @@ func TestSavePost(t *testing.T) {
 
 			postID, err := storage.SavePost(context.Background(), tt.post)
 
-			assert.Equal(t, tt.wantID, postID)
-			assert.Equal(t, tt.wantErr, err != nil)
+			if tt.wantErr {
+                assert.Error(t, err)
+                if !errors.Is(err, tt.err) {
+                    t.Errorf("expected error: %v, got: %v", tt.err, err)
+                }
+            } else {
+                assert.NoError(t, err)
+                assert.Equal(t, tt.wantID, postID)
+            }
 
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
+            if err := mock.ExpectationsWereMet(); err != nil {
+                t.Errorf("there were unfulfilled expectations: %s", err)
+            }
 		})
 	}
 }
@@ -121,6 +133,7 @@ func TestPost(t *testing.T) {
 		mock     func()
 		wantPost *model.Post
 		wantErr  bool
+        err      error
 	}{
 		{
 			name:   "Success",
@@ -140,18 +153,20 @@ func TestPost(t *testing.T) {
 				CommentsCount: 0,
 			},
 			wantErr: false,
+            err:     nil,
 		},
 		{
 			name:   "Post not found",
-			postID: 999999,
+			postID: 2,
 			mock: func() {
 				mock.ExpectPrepare("SELECT id, title, content, user_id, comments_count FROM posts WHERE id = \\$1").
 					ExpectQuery().
-					WithArgs(999999).
+					WithArgs(2).
 					WillReturnError(sql.ErrNoRows)
 			},
 			wantPost: nil,
 			wantErr:  true,
+            err:      st.ErrNotFound,
 		},
 	}
 
@@ -161,12 +176,19 @@ func TestPost(t *testing.T) {
 			ctx := context.Background()
 			post, err := storage.Post(ctx, tt.postID)
 
-			assert.Equal(t, tt.wantPost, post)
-			assert.Equal(t, tt.wantErr, err != nil)
+			if tt.wantErr {
+                assert.Error(t, err)
+                if !errors.Is(err, tt.err) {
+                    t.Errorf("expected error: %v, got: %v", tt.err, err)
+                }
+            } else {
+                assert.NoError(t, err)
+                assert.Equal(t, tt.wantPost, post)
+            }
 
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
+            if err := mock.ExpectationsWereMet(); err != nil {
+                t.Errorf("there were unfulfilled expectations: %s", err)
+            }
 		})
 	}
 }
@@ -180,6 +202,7 @@ func TestPosts(t *testing.T) {
 		mock      func()
 		wantPosts []*model.Post
 		wantErr   bool
+        err       error
 	}{
 		{
 			name: "Success",
@@ -207,6 +230,7 @@ func TestPosts(t *testing.T) {
 				},
 			},
 			wantErr: false,
+            err:     nil,
 		},
 		{
 			name: "No posts",
@@ -217,6 +241,7 @@ func TestPosts(t *testing.T) {
 			},
 			wantPosts: []*model.Post{},
 			wantErr:   false,
+            err:       nil,
 		},
 	}
 
@@ -226,12 +251,19 @@ func TestPosts(t *testing.T) {
 			ctx := context.Background()
 			posts, err := storage.Posts(ctx)
 
-			assert.Equal(t, tt.wantPosts, posts)
-			assert.Equal(t, tt.wantErr, err != nil)
+			if tt.wantErr {
+                assert.Error(t, err)
+                if !errors.Is(err, tt.err) {
+                    t.Errorf("expected error: %v, got: %v", tt.err, err)
+                }
+            } else {
+                assert.NoError(t, err)
+                assert.Equal(t, tt.wantPosts, posts)
+            }
 
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
+            if err := mock.ExpectationsWereMet(); err != nil {
+                t.Errorf("there were unfulfilled expectations: %s", err)
+            }
 		})
 	}
 }
