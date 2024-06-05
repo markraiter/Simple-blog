@@ -3,9 +3,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	st "github.com/markraiter/simple-blog/internal/app/storage"
 	"github.com/markraiter/simple-blog/internal/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -243,6 +245,7 @@ func TestUpdatePost(t *testing.T) {
         post    *model.Post
         mock    func()
         wantErr bool
+        err     error
     }{
         {
             name: "Success",
@@ -253,11 +256,52 @@ func TestUpdatePost(t *testing.T) {
                 UserID:  1,
             },
             mock: func() {
-                mock.ExpectQuery("UPDATE posts SET title = \\$1, content = \\$2 WHERE id = \\$3 AND user_id = \\$4").
+                mock.ExpectQuery("UPDATE posts SET title = \\$1, content = \\$2 WHERE id = \\$3 AND user_id = \\$4 RETURNING id").
                     WithArgs("Updated Title", "Updated Content", 1, 1).
                     WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
             },
             wantErr: false,
+            err:     nil,
+        },
+        {
+            name: "Post Not Found",
+            post: &model.Post{
+                ID:      2,
+                Title:   "Title",
+                Content: "Content",
+                UserID:  1,
+            },
+            mock: func() {
+                mock.ExpectQuery("UPDATE posts SET title = \\$1, content = \\$2 WHERE id = \\$3 AND user_id = \\$4 RETURNING id").
+                    WithArgs("Title", "Content", 2, 1).
+                    WillReturnError(sql.ErrNoRows)
+
+                mock.ExpectQuery("SELECT id FROM posts WHERE id = \\$1").
+                    WithArgs(2).
+                    WillReturnError(sql.ErrNoRows)
+            },
+            wantErr: true,
+            err:     st.ErrNotFound,
+        },
+        {
+            name: "User Not Allowed",
+            post: &model.Post{
+                ID:      3,
+                Title:   "Another Title",
+                Content: "Another Content",
+                UserID:  1,
+            },
+            mock: func() {
+                mock.ExpectQuery("UPDATE posts SET title = \\$1, content = \\$2 WHERE id = \\$3 AND user_id = \\$4 RETURNING id").
+                    WithArgs("Another Title", "Another Content", 3, 1).
+                    WillReturnError(sql.ErrNoRows)
+
+                mock.ExpectQuery("SELECT id FROM posts WHERE id = \\$1").
+                    WithArgs(3).
+                    WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(3))
+            },
+            wantErr: true,
+            err:     st.ErrNotAllowed,
         },
     }
 
@@ -267,7 +311,14 @@ func TestUpdatePost(t *testing.T) {
             ctx := context.Background()
             err := storage.UpdatePost(ctx, tt.post)
 
-            assert.Equal(t, tt.wantErr, err != nil)
+            if tt.wantErr {
+                assert.Error(t, err)
+                if !errors.Is(err, tt.err) {
+                    t.Errorf("expected error: %v, got: %v", tt.err, err)
+                }
+            } else {
+                assert.NoError(t, err)
+            }
 
             if err := mock.ExpectationsWereMet(); err != nil {
                 t.Errorf("there were unfulfilled expectations: %s", err)
