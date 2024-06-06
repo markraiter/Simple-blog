@@ -31,7 +31,7 @@ tasks:
     cmds:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o coverage.html
-      - xdg-open coverage.html
+      - xdg-open coverage.html 
 
   rmcov:
     cmds:

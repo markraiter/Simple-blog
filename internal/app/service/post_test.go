@@ -39,6 +39,20 @@ func (m *MockPostProvider) Posts(ctx context.Context) ([]*model.Post, error) {
     return args.Get(0).([]*model.Post), args.Error(1)
 }
 
+type MockPostProcessor struct {
+    mock.Mock
+}
+
+func (m *MockPostProcessor) UpdatePost(ctx context.Context, post *model.Post) error {
+    args := m.Called(ctx, post)
+    return args.Error(0)
+}
+
+func (m *MockPostProcessor) DeletePost(ctx context.Context, postID, userID int) error {
+    args := m.Called(ctx, postID, userID)
+    return args.Error(0)
+}
+
 // Tests
 func TestPostService_SavePost(t *testing.T) {
 	mockSaver := new(MockPostSaver)
@@ -204,6 +218,129 @@ func TestPostService_Posts(t *testing.T) {
 
             assert.Equal(t, tt.expectedPosts, posts)
             mockProvider.AssertExpectations(t)
+        })
+    }
+}
+
+func TestPostService_UpdatePost(t *testing.T) {
+    mockProcessor := new(MockPostProcessor)
+    postService := &PostService{
+        processor: mockProcessor,
+    }
+
+    tests := []struct {
+        name        string
+        postID      int
+        userID      int
+        postReq     *model.PostRequest
+        mockError   error
+        expectedErr error
+    }{
+        {
+            name: "Success",
+            postID: 1,
+            userID: 1,
+            postReq: &model.PostRequest{
+                Title:   "Test Title",
+                Content: "Test Content",
+            },
+            mockError:   nil,
+            expectedErr: nil,
+        },
+        {
+            name: "Post not found",
+            postID: 2,
+            userID: 1,
+            postReq: &model.PostRequest{
+                Title:   "Test Title",
+                Content: "Test Content",
+            },
+            mockError:   storage.ErrNotFound,
+            expectedErr: ErrNotFound,
+        },
+        {
+            name: "Not allowed",
+            postID: 1,
+            userID: 2,
+            postReq: &model.PostRequest{
+                Title:   "Test Title",
+                Content: "Test Content",
+            },
+            mockError:   storage.ErrNotAllowed,
+            expectedErr: ErrNotAllowed,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            mockProcessor.On("UpdatePost", mock.Anything, mock.MatchedBy(func(post *model.Post)bool {
+                return post.ID == tt.postID && post.UserID == tt.userID
+            })).Return(tt.mockError)
+
+            err := postService.UpdatePost(context.Background(), tt.postID, tt.userID, tt.postReq)
+
+            if tt.expectedErr != nil {
+                assert.Error(t, err)
+                assert.True(t, errors.Is(err, tt.expectedErr))
+            } else {
+                assert.NoError(t, err)
+            }
+
+            mockProcessor.AssertExpectations(t)
+        })
+    }
+}
+
+func TestPostService_DeletePost(t *testing.T) {
+    mockProcessor := new(MockPostProcessor)
+    postService := &PostService{
+        processor: mockProcessor,
+    }
+
+    tests := []struct {
+        name        string
+        postID      int
+        userID      int
+        mockError   error
+        expectedErr error
+    }{
+        {
+            name: "Success",
+            postID: 1,
+            userID: 1,
+            mockError:   nil,
+            expectedErr: nil,
+        },
+        {
+            name: "Post not found",
+            postID: 2,
+            userID: 1,
+            mockError:   storage.ErrNotFound,
+            expectedErr: ErrNotFound,
+        },
+        {
+            name: "Not allowed",
+            postID: 1,
+            userID: 2,
+            mockError:   storage.ErrNotAllowed,
+            expectedErr: ErrNotAllowed,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            mockProcessor.On("DeletePost", mock.Anything, tt.postID, tt.userID).Return(tt.mockError)
+
+            err := postService.DeletePost(context.Background(), tt.postID, tt.userID)
+
+            if tt.expectedErr != nil {
+                assert.Error(t, err)
+                assert.True(t, errors.Is(err, tt.expectedErr))
+            } else {
+                assert.NoError(t, err)
+            }
+
+            mockProcessor.AssertExpectations(t)
         })
     }
 }
