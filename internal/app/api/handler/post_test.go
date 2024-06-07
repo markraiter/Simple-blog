@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"log/slog"
 	"net/http"
@@ -14,11 +15,13 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/markraiter/simple-blog/internal/app/api/middleware"
+	"github.com/markraiter/simple-blog/internal/app/service"
 	"github.com/markraiter/simple-blog/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
+// mocks
 type MockPostSaver struct {
 	mock.Mock
 }
@@ -28,6 +31,25 @@ func (m *MockPostSaver) SavePost(ctx context.Context, userID int, postReq *model
 	return args.Int(0), args.Error(1)
 }
 
+type MockPostProvider struct {
+    mock.Mock
+}
+
+func (m *MockPostProvider) Post(ctx context.Context, postID int) (*model.Post, error) {
+    args := m.Called(ctx, postID)
+    if args.Get(0) != nil {
+        return args.Get(0).(*model.Post), args.Error(1)
+    }
+
+    return nil, args.Error(1)
+}
+
+func (m *MockPostProvider) Posts(ctx context.Context) ([]*model.Post, error) {
+    args := m.Called(ctx)
+    return args.Get(0).([]*model.Post), args.Error(1)
+}
+
+// tests
 func TestCreatePost(t *testing.T) {
 	mockSaver := new(MockPostSaver)
 	ph := &PostHandler{
@@ -152,4 +174,88 @@ func TestCreatePost(t *testing.T) {
 			mockSaver.AssertExpectations(t)
 		})
 	}
+}
+
+func TestGetPost(t *testing.T) {
+    mockProvider := new(MockPostProvider)
+    ph := &PostHandler{
+        log:       slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
+        validate:  validator.New(),
+        saver:     nil,
+        provider:  mockProvider,
+        processor: nil,
+    }
+
+    tests := []struct {
+        name           string
+        postID         string
+        mockReturnPost *model.Post
+        mockReturnErr  error
+        expectedStatus int
+        expectGetPost  bool
+    }{
+        {
+            name: "Success",
+            postID: "1",
+            mockReturnPost: &model.Post{
+                ID:      1,
+                Title:   "Title",
+                Content: "Content",
+            },
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusOK,
+            expectGetPost:  true,
+        },
+        {
+            name: "Error getting postID from query",
+            postID: "",
+            mockReturnPost: nil,
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+            expectGetPost:  false,
+        },
+        {
+            name: "Error parsing postID",
+            postID: "a",
+            mockReturnPost: nil,
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+            expectGetPost:  false,
+        },
+        {
+            name: "Post not found",
+            postID: "2",
+            mockReturnPost: nil,
+            mockReturnErr:  service.ErrNotFound,
+            expectedStatus: http.StatusNotFound,
+            expectGetPost:  true,
+        },
+        {
+            name: "Internal server error",
+            postID: "1",
+            mockReturnPost: nil,
+            mockReturnErr:  fmt.Errorf("internal server error"),
+            expectedStatus: http.StatusInternalServerError,
+            expectGetPost:  true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            req := httptest.NewRequest("GET", "/api/posts?id="+tt.postID, nil)
+            w := httptest.NewRecorder()
+
+            if tt.expectGetPost {
+                postID, _ := strconv.Atoi(tt.postID)
+                mockProvider.On("Post", mock.Anything, postID).Return(tt.mockReturnPost, tt.mockReturnErr).Once()
+            }
+
+            handler := ph.Post(context.Background())
+            handler.ServeHTTP(w, req)
+
+            resp := w.Result()
+            assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+            mockProvider.AssertExpectations(t)
+        })
+    }
 }
