@@ -238,7 +238,7 @@ func TestGetPost(t *testing.T) {
             expectedStatus: http.StatusInternalServerError,
             expectGetPost:  true,
         },
-    }
+   }
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
@@ -251,6 +251,69 @@ func TestGetPost(t *testing.T) {
             }
 
             handler := ph.Post(context.Background())
+            handler.ServeHTTP(w, req)
+
+            resp := w.Result()
+            assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+            mockProvider.AssertExpectations(t)
+        })
+    }
+}
+
+func TestGetAllPosts(t *testing.T) {
+    mockProvider := new(MockPostProvider)
+    ph := &PostHandler{
+        log:       slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
+        validate:  validator.New(),
+        saver:     nil,
+        provider:  mockProvider,
+        processor: nil,
+    }
+
+    tests := []struct {
+        name           string
+        mockReturnPosts []*model.Post
+        mockReturnErr   error
+        expectedStatus  int
+        expectGetPosts  bool
+    }{
+        {
+            name: "Success",
+            mockReturnPosts: []*model.Post{
+                {
+                    ID:      1,
+                    Title:   "Title",
+                    Content: "Content",
+                },
+                {
+                    ID:      2,
+                    Title:   "Title",
+                    Content: "Content",
+                },
+            },
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusOK,
+            expectGetPosts:  true,
+        },
+        {
+            name: "Internal server error",
+            mockReturnPosts: nil,
+            mockReturnErr:  fmt.Errorf("internal server error"),
+            expectedStatus: http.StatusInternalServerError,
+            expectGetPosts:  true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            req := httptest.NewRequest("GET", "/api/posts", nil)
+            w := httptest.NewRecorder()
+
+            if tt.expectGetPosts {
+                mockProvider.On("Posts", mock.Anything).Return(tt.mockReturnPosts, tt.mockReturnErr).Once()
+            }
+
+            handler := ph.Posts(context.Background())
             handler.ServeHTTP(w, req)
 
             resp := w.Result()
