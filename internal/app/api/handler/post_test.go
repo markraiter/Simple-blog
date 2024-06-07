@@ -49,6 +49,20 @@ func (m *MockPostProvider) Posts(ctx context.Context) ([]*model.Post, error) {
     return args.Get(0).([]*model.Post), args.Error(1)
 }
 
+type MockPostProcessor struct {
+    mock.Mock
+}
+
+func (m *MockPostProcessor) UpdatePost(ctx context.Context, posID, userID int, postReq *model.PostRequest) error {
+    args := m.Called(ctx, posID, userID, postReq)
+    return args.Error(0)
+}
+
+func (m *MockPostProcessor) DeletePost(ctx context.Context, posID, userID int) error {
+    args := m.Called(ctx, posID, userID)
+    return args.Error(0)
+}
+
 // tests
 func TestCreatePost(t *testing.T) {
 	mockSaver := new(MockPostSaver)
@@ -73,7 +87,6 @@ func TestCreatePost(t *testing.T) {
 		{
 			name: "Success",
 			userID: "1",
-            addUserIDToCtx: true,
 			postReq: &model.PostRequest{
 				Title:   "Title",
 				Content: "Content",
@@ -83,36 +96,9 @@ func TestCreatePost(t *testing.T) {
 			expectedStatus: http.StatusCreated,
             expectSavePost: true,
 		},
-        {
-            name: "Error getting userID from ctx",
-            userID: "",
-            addUserIDToCtx: false,
-            postReq: &model.PostRequest{
-                Title:   "Title",
-                Content: "Content",
-            },
-            mockReturnID:   0,
-            mockReturnErr:  nil,
-            expectedStatus: http.StatusInternalServerError,
-            expectSavePost: false,
-        },
-        {
-            name: "Error parsing userID",
-            userID: "a",
-            addUserIDToCtx: true,
-            postReq: &model.PostRequest{
-                Title:   "Title",
-                Content: "Content",
-            },
-            mockReturnID:   0,
-            mockReturnErr:  nil,
-            expectedStatus: http.StatusInternalServerError,
-            expectSavePost: false,
-        },
 		{
 			name: "Invalid request - JSON parsing error",
 			userID: "1",
-            addUserIDToCtx: true,
 			postReq: nil,
 			mockReturnID:  0,
 			mockReturnErr: nil,
@@ -122,7 +108,6 @@ func TestCreatePost(t *testing.T) {
 		{
 			name: "Invalid request - validation error",
 			userID: "1",
-            addUserIDToCtx: true,
 			postReq: &model.PostRequest{
 				Title:   "",
 				Content: "",
@@ -135,7 +120,6 @@ func TestCreatePost(t *testing.T) {
 		{
 			name: "Internal server error",
 			userID: "1",
-            addUserIDToCtx: true,
 			postReq: &model.PostRequest{
 				Title:   "Title",
 				Content: "Content",
@@ -157,9 +141,6 @@ func TestCreatePost(t *testing.T) {
 			}
 
 			req := httptest.NewRequest("POST", "/api/posts", bytes.NewBuffer(body))
-			if tt.addUserIDToCtx {
-				req = req.WithContext(context.WithValue(req.Context(), middleware.UIDKey, tt.userID))
-			}
 			w := httptest.NewRecorder()
 
 			if tt.expectSavePost {
@@ -319,6 +300,233 @@ func TestGetAllPosts(t *testing.T) {
             resp := w.Result()
             assert.Equal(t, tt.expectedStatus, resp.StatusCode)
             mockProvider.AssertExpectations(t)
+        })
+    }
+}
+
+func TestUpdatePost(t *testing.T) {
+    mockProcessor := new(MockPostProcessor)
+    ph := &PostHandler{
+        log:       slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
+        validate:  validator.New(),
+        saver:     nil,
+        provider:  nil,
+        processor: mockProcessor,
+    }
+
+    tests := []struct {
+        name           string
+        userID         string
+        postID         string
+        postReq        *model.PostRequest
+        mockReturnErr  error
+        expectedStatus int
+        expectUpdatePost bool
+    }{
+        {
+            name: "Success",
+            userID: "1",
+            postID: "1",
+            postReq: &model.PostRequest{
+                Title:   "Title",
+                Content: "Content",
+            },
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusOK,
+            expectUpdatePost:  true,
+        },
+        {
+            name: "Invalid request - JSON parsing error",
+            userID: "1",
+            postID: "1",
+            postReq: nil,
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+            expectUpdatePost:  false,
+        },
+        {
+            name: "Invalid request - validation error",
+            userID: "1",
+            postID: "1",
+            postReq: &model.PostRequest{
+                Title:   "",
+                Content: "",
+            },
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+            expectUpdatePost:  false,
+        },
+        {
+            name: "Error getting postID from query",
+            userID: "1",
+            postID: "",
+            postReq: &model.PostRequest{
+                Title:   "Title",
+                Content: "Content",
+            },
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name: "Error parsing postID",
+            userID: "1",
+            postID: "a",
+            postReq: &model.PostRequest{
+                Title:   "Title",
+                Content: "Content",
+            },
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name: "User is not allowed to perform this operation",
+            userID: "1",
+            postID: "1",
+            postReq: &model.PostRequest{
+                Title:   "Title",
+                Content: "Content",
+            },
+            mockReturnErr:  service.ErrNotAllowed,
+            expectedStatus: http.StatusForbidden,
+            expectUpdatePost:  true,
+        },
+        {
+            name: "Post not found",
+            userID: "1",
+            postID: "1",
+            postReq: &model.PostRequest{
+                Title:   "Title",
+                Content: "Content",
+            },
+            mockReturnErr:  service.ErrNotFound,
+            expectedStatus: http.StatusNotFound,
+            expectUpdatePost:  true,
+        },
+        {
+            name: "Internal server error",
+            userID: "1",
+            postID: "1",
+            postReq: &model.PostRequest{
+                Title:   "Title",
+                Content: "Content",
+            },
+            mockReturnErr:  fmt.Errorf("internal server error"),
+            expectedStatus: http.StatusInternalServerError,
+            expectUpdatePost:  true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            var body []byte
+            if tt.postReq != nil {
+                body, _ = json.Marshal(tt.postReq)
+            } else {
+                body = []byte("{")
+            }
+
+            req := httptest.NewRequest("PUT", "/api/posts?id="+tt.postID, bytes.NewBuffer(body))
+            req = req.WithContext(context.WithValue(req.Context(), middleware.UIDKey, tt.userID))
+            w := httptest.NewRecorder()
+
+            if tt.expectUpdatePost {
+                postID, _ := strconv.Atoi(tt.postID)
+                mockProcessor.On("UpdatePost", mock.Anything, postID, 1, tt.postReq).Return(tt.mockReturnErr).Once()
+            }
+
+            handler := ph.UpdatePost(context.Background())
+            handler.ServeHTTP(w, req)
+
+            resp := w.Result()
+            assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+            mockProcessor.AssertExpectations(t)
+        })
+    }
+}
+
+func TestDeletePost(t *testing.T) {
+    mockProcessor := new(MockPostProcessor)
+    ph := &PostHandler{
+        log:       slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
+        validate:  validator.New(),
+        saver:     nil,
+        provider:  nil,
+        processor: mockProcessor,
+    }
+
+    tests := []struct {
+        name           string
+        userID         string
+        postID         string
+        mockReturnErr  error
+        expectedStatus int
+        expectDeletePost bool
+    }{
+        {
+            name: "Success",
+            userID: "1",
+            postID: "1",
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusOK,
+            expectDeletePost:  true,
+        },
+        {
+            name: "Error getting postID from query",
+            userID: "1",
+            postID: "",
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name: "Error parsing postID",
+            userID: "1",
+            postID: "a",
+            mockReturnErr:  nil,
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name: "User is not allowed to perform this operation",
+            userID: "1",
+            postID: "1",
+            mockReturnErr:  service.ErrNotAllowed,
+            expectedStatus: http.StatusForbidden,
+            expectDeletePost:  true,
+        },
+        {
+            name: "Post not found",
+            userID: "1",
+            postID: "1",
+            mockReturnErr:  service.ErrNotFound,
+            expectedStatus: http.StatusNotFound,
+            expectDeletePost:  true,
+        },
+        {
+            name: "Internal server error",
+            userID: "1",
+            postID: "1",
+            mockReturnErr:  fmt.Errorf("internal server error"),
+            expectedStatus: http.StatusInternalServerError,
+            expectDeletePost:  true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            req := httptest.NewRequest("DELETE", "/api/posts?id="+tt.postID, nil)
+            req = req.WithContext(context.WithValue(req.Context(), middleware.UIDKey, tt.userID))
+            w := httptest.NewRecorder()
+
+            if tt.expectDeletePost {
+                postID, _ := strconv.Atoi(tt.postID)
+                mockProcessor.On("DeletePost", mock.Anything, postID, 1).Return(tt.mockReturnErr).Once()
+            }
+
+            handler := ph.DeletePost(context.Background())
+            handler.ServeHTTP(w, req)
+
+            resp := w.Result()
+            assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+            mockProcessor.AssertExpectations(t)
         })
     }
 }
