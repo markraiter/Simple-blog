@@ -9,6 +9,5 @@ type Comment struct {
 
 type CommentRequest struct {
 	Content string `json:"content" validate:"required,min=3" example:"lorem ipsum dolor sit amet ..."`
-	PostID  int    `json:"post_id"`
-	UserID  int    `json:"user_id"`
+	PostID  int    `json:"post_id" validate:"required" example:"1"`
 }
