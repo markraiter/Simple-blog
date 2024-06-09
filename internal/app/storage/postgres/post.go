@@ -49,7 +49,7 @@ func (s *Storage) Post(ctx context.Context, id int) (*model.Post, error) {
 func (s *Storage) Posts(ctx context.Context) ([]*model.Post, error) {
 	const operation = "storage.Posts"
 
-	query, err := s.PostgresDB.Prepare("SELECT id, title, content, user_id, comments_count FROM posts ORDER BY created_at")
+	query, err := s.PostgresDB.Prepare("SELECT id, title, content, user_id, comments_count FROM posts ORDER BY created_at DESC")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
@@ -75,64 +75,64 @@ func (s *Storage) Posts(ctx context.Context) ([]*model.Post, error) {
 }
 
 func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
-    const operation = "storage.UpdatePost"
+	const operation = "storage.UpdatePost"
 
-    query := `
+	query := `
         UPDATE posts 
         SET title = $1, content = $2 
         WHERE id = $3 AND user_id = $4
         RETURNING id
     `
 
-    var updatedPostID int
-    err := s.PostgresDB.QueryRowContext(ctx, query, post.Title, post.Content, post.ID, post.UserID).Scan(&updatedPostID)
-    if err != nil {
-        if errors.Is(err, sql.ErrNoRows) {
-            postExistsQuery := "SELECT id FROM posts WHERE id = $1"
-            var existsPostID int
-            err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, post.ID).Scan(&existsPostID)
-            if err != nil {
-                if errors.Is(err, sql.ErrNoRows) {
-                    return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
-                }
-                return fmt.Errorf("%s: %w", operation, err)
-            }
-            return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
-        }
-        return fmt.Errorf("%s: %w", operation, err)
-    }
+	var updatedPostID int
+	err := s.PostgresDB.QueryRowContext(ctx, query, post.Title, post.Content, post.ID, post.UserID).Scan(&updatedPostID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			postExistsQuery := "SELECT id FROM posts WHERE id = $1"
+			var existsPostID int
+			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, post.ID).Scan(&existsPostID)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+				}
+				return fmt.Errorf("%s: %w", operation, err)
+			}
+			return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
+		}
+		return fmt.Errorf("%s: %w", operation, err)
+	}
 
-    return nil
+	return nil
 }
 
 func (s *Storage) DeletePost(ctx context.Context, postID, userID int) error {
-    const operation = "storage.DeletePost"
+	const operation = "storage.DeletePost"
 
-    query := `
+	query := `
         DELETE FROM posts 
         WHERE id = $1 AND user_id = $2 
         RETURNING id
     `
 
-    var deletedPostID int
-    err := s.PostgresDB.QueryRowContext(ctx, query, postID, userID).Scan(&deletedPostID)
-    if err != nil {
-        if errors.Is(err, sql.ErrNoRows) {
-            postExistsQuery := "SELECT id FROM posts WHERE id = $1"
-            var existsPostID int
-            err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, postID).Scan(&existsPostID)
-            if err != nil {
-                if errors.Is(err, sql.ErrNoRows) {
-                    return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
-                }
-                return fmt.Errorf("%s: %w", operation, err)
-            }
-            return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
-        }
-        return fmt.Errorf("%s: %w", operation, err)
-    }
+	var deletedPostID int
+	err := s.PostgresDB.QueryRowContext(ctx, query, postID, userID).Scan(&deletedPostID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			postExistsQuery := "SELECT id FROM posts WHERE id = $1"
+			var existsPostID int
+			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, postID).Scan(&existsPostID)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+				}
+				return fmt.Errorf("%s: %w", operation, err)
+			}
+			return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
+		}
+		return fmt.Errorf("%s: %w", operation, err)
+	}
 
-    return nil
+	return nil
 }
 
 // func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
