@@ -295,3 +295,192 @@ func TestCommentsByPost(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateComment(t *testing.T) {
+	storage, mock, closeDB := prepareStorage(t)
+	defer closeDB()
+
+	tests := []struct {
+		name    string
+		comment *model.Comment
+		mock    func()
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "Success",
+			comment: &model.Comment{
+				ID:      1,
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE comments SET content = \\$1 WHERE id = \\$2 AND user_id = \\$3 RETURNING id").
+					WithArgs("Updated Content", 1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+			},
+			wantErr: false,
+			err:     nil,
+		},
+		{
+			name: "Comment not found",
+			comment: &model.Comment{
+				ID:      1,
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE comments SET content = \\$1 WHERE id = \\$2 AND user_id = \\$3 RETURNING id").
+					WithArgs("Updated Content", 1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(sql.ErrNoRows)
+			},
+			wantErr: true,
+			err:     st.ErrNotFound,
+		},
+		{
+			name: "Post not found",
+			comment: &model.Comment{
+				ID:      1,
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE comments SET content = \\$1 WHERE id = \\$2 AND user_id = \\$3 RETURNING id").
+					WithArgs("Updated Content", 1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(sql.ErrNoRows)
+			},
+			wantErr: true,
+			err:     st.ErrNotFound,
+		},
+		{
+			name: "User not allowed",
+			comment: &model.Comment{
+				ID:      1,
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE comments SET content = \\$1 WHERE id = \\$2 AND user_id = \\$3 RETURNING id").
+					WithArgs("Updated Content", 1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+			},
+			wantErr: true,
+			err:     st.ErrNotAllowed,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mock()
+			ctx := context.Background()
+
+			err := storage.UpdateComment(ctx, tt.comment)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if !errors.Is(err, tt.err) {
+					t.Errorf("error = %v, wantErr %v", err, tt.err)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
+}
+
+func TestDeleteComment(t *testing.T) {
+	storage, mock, closeDB := prepareStorage(t)
+	defer closeDB()
+
+	tests := []struct {
+		name      string
+		commentID int
+		userID    int
+		mock      func()
+		wantErr   bool
+		err       error
+	}{
+		{
+			name:      "Success",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+			},
+			wantErr: false,
+			err:     nil,
+		},
+		{
+			name:      "Comment not found",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(sql.ErrNoRows)
+			},
+			wantErr: true,
+			err:     st.ErrNotFound,
+		},
+		{
+			name:      "User not allowed",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+			},
+			wantErr: true,
+			err:     st.ErrNotAllowed,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mock()
+			ctx := context.Background()
+
+			err := storage.DeleteComment(ctx, tt.commentID, tt.userID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if !errors.Is(err, tt.err) {
+					t.Errorf("error = %v, wantErr %v", err, tt.err)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
+}

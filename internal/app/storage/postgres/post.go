@@ -14,6 +14,7 @@ func (s *Storage) SavePost(ctx context.Context, post *model.Post) (int, error) {
 	const operation = "storage.SavePost"
 
 	query := "INSERT INTO posts (title, content, user_id) VALUES ($1, $2, $3) RETURNING id"
+
 	err := s.PostgresDB.QueryRow(query, post.Title, post.Content, post.UserID).Scan(&post.ID)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", operation, err)
@@ -33,8 +34,8 @@ func (s *Storage) Post(ctx context.Context, id int) (*model.Post, error) {
 	row := query.QueryRowContext(ctx, id)
 
 	post := &model.Post{}
-	err = row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CommentsCount)
 
+	err = row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CommentsCount)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
@@ -74,6 +75,10 @@ func (s *Storage) Posts(ctx context.Context) ([]*model.Post, error) {
 	return posts, nil
 }
 
+// UpdatePost updates post by its ID.
+//
+// If the post does not exist it returns storage.ErrNotFound.
+// If the post does not belong to the user it returns storage.ErrNotAllowed.
 func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
 	const operation = "storage.UpdatePost"
 

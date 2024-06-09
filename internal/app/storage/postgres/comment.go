@@ -95,3 +95,68 @@ func (s *Storage) CommentsByPost(ctx context.Context, postID int) ([]*model.Comm
 
 	return comments, nil
 }
+
+// UpdateComment updates a comment by its ID.
+//
+// If the comment does not exist it returns storage.ErrNotFound.
+// If the user is not the author of the comment it returns storage.ErrNotAllowed.
+// If the post does not exist it returns storage.ErrNotFound.
+func (s *Storage) UpdateComment(ctx context.Context, comment *model.Comment) error {
+	const operation = "storage.UpdateComment"
+
+	query := `
+        UPDATE comments 
+        SET content = $1 
+        WHERE id = $2 AND user_id = $3
+        RETURNING id
+    `
+
+	var updatedCommentID int
+	err := s.PostgresDB.QueryRowContext(ctx, query, comment.Content, comment.ID, comment.UserID).Scan(&updatedCommentID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			commentExistsQuery := "SELECT id FROM comments WHERE id = $1"
+			var existsCommentID int
+			err = s.PostgresDB.QueryRowContext(ctx, commentExistsQuery, comment.ID).Scan(&existsCommentID)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+				}
+				return fmt.Errorf("%s: %w", operation, err)
+			}
+			return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
+		}
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
+	return nil
+}
+
+func (s *Storage) DeleteComment(ctx context.Context, commentID, userID int) error {
+	const operation = "storage.DeleteComment"
+
+	query := `
+        DELETE FROM comments 
+        WHERE id = $1 AND user_id = $2 
+        RETURNING id
+    `
+	var deletedCommentID int
+	err := s.PostgresDB.QueryRowContext(ctx, query, commentID, userID).Scan(&deletedCommentID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			postExistsQuery := "SELECT id FROM comments WHERE id = $1"
+			var existsCommentID int
+			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, commentID).Scan(&existsCommentID)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+				}
+				return fmt.Errorf("%s: %w", operation, err)
+			}
+			return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
+		}
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
+	return nil
+}
