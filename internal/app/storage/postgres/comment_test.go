@@ -31,9 +31,14 @@ func TestSaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectExec("UPDATE posts SET comments_count = comments_count \\+ 1 WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
 			},
 			wantID:  1,
 			wantErr: false,
@@ -46,9 +51,11 @@ func TestSaveComment(t *testing.T) {
 				PostID:  1,
 			},
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 0).
 					WillReturnError(sql.ErrNoRows)
+				mock.ExpectRollback()
 			},
 			wantID:  0,
 			wantErr: true,
@@ -61,9 +68,11 @@ func TestSaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 0, 1).
 					WillReturnError(sql.ErrNoRows)
+				mock.ExpectRollback()
 			},
 			wantID:  0,
 			wantErr: true,
@@ -76,9 +85,11 @@ func TestSaveComment(t *testing.T) {
 				UserID: 1,
 			},
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("", 1, 1).
 					WillReturnError(sql.ErrNoRows)
+				mock.ExpectRollback()
 			},
 			wantID:  0,
 			wantErr: true,
@@ -92,9 +103,11 @@ func TestSaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 1).
 					WillReturnError(sql.ErrNoRows)
+				mock.ExpectRollback()
 			},
 			wantID:  0,
 			wantErr: true,
