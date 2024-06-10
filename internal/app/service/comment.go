@@ -43,3 +43,15 @@ func (s *CommentService) SaveComment(ctx context.Context, userID int, commentReq
 
 	return id, nil
 }
+
+func (s *CommentService) Comment(ctx context.Context, id int) (*model.Comment, error) {
+	// const operation = "service.Comment"
+
+	// comment, err := s.provider.Comment(ctx, id)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("%s: %w", operation, err)
+	// }
+
+	// return comment, nil
+	return nil, nil
+}
