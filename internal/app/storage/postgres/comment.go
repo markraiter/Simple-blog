@@ -132,29 +132,85 @@ func (s *Storage) UpdateComment(ctx context.Context, comment *model.Comment) err
 	return nil
 }
 
+// func (s *Storage) DeleteComment(ctx context.Context, commentID, userID int) error {
+// 	const operation = "storage.DeleteComment"
+
+// 	query := `
+//         DELETE FROM comments
+//         WHERE id = $1 AND user_id = $2
+//         RETURNING id
+//     `
+// 	var deletedCommentID int
+// 	err := s.PostgresDB.QueryRowContext(ctx, query, commentID, userID).Scan(&deletedCommentID)
+// 	if err != nil {
+// 		if errors.Is(err, sql.ErrNoRows) {
+// 			postExistsQuery := "SELECT id FROM comments WHERE id = $1"
+// 			var existsCommentID int
+// 			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, commentID).Scan(&existsCommentID)
+// 			if err != nil {
+// 				if errors.Is(err, sql.ErrNoRows) {
+// 					return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+// 				}
+// 				return fmt.Errorf("%s: %w", operation, err)
+// 			}
+// 			return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
+// 		}
+// 		return fmt.Errorf("%s: %w", operation, err)
+// 	}
+
+// 	return nil
+// }
+
 func (s *Storage) DeleteComment(ctx context.Context, commentID, userID int) error {
 	const operation = "storage.DeleteComment"
 
+	tx, err := s.PostgresDB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
 	query := `
-        DELETE FROM comments 
-        WHERE id = $1 AND user_id = $2 
-        RETURNING id
-    `
+		DELETE FROM comments
+		WHERE id = $1 AND user_id = $2
+		RETURNING id
+	`
 	var deletedCommentID int
-	err := s.PostgresDB.QueryRowContext(ctx, query, commentID, userID).Scan(&deletedCommentID)
+	err = tx.QueryRowContext(ctx, query, commentID, userID).Scan(&deletedCommentID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			postExistsQuery := "SELECT id FROM comments WHERE id = $1"
+			commentExistsQuery := "SELECT id FROM comments WHERE id = $1"
 			var existsCommentID int
-			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, commentID).Scan(&existsCommentID)
+
+			err = s.PostgresDB.QueryRowContext(ctx, commentExistsQuery, commentID).Scan(&existsCommentID)
 			if err != nil {
+				tx.Rollback()
 				if errors.Is(err, sql.ErrNoRows) {
+					tx.Rollback()
+
 					return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
 				}
+				tx.Rollback()
+
 				return fmt.Errorf("%s: %w", operation, err)
 			}
+			tx.Rollback()
+
 			return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
 		}
+		tx.Rollback()
+
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
+	updateQuery := "UPDATE posts SET comments_count = comments_count - 1 WHERE id = (SELECT post_id FROM comments WHERE id = $1)"
+	_, err = tx.ExecContext(ctx, updateQuery, commentID)
+	if err != nil {
+		tx.Rollback()
+
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
+	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 

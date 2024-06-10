@@ -36,7 +36,7 @@ func main() {
 	log := middleware.SetupLogger(cfg.Env)
 
 	validate := validator.New()
-    validate.RegisterValidation("number", model.ValidateContainsNumber, false)   // nolint:errcheck
+	validate.RegisterValidation("number", model.ValidateContainsNumber, false)   // nolint:errcheck
 	validate.RegisterValidation("upper", model.ValidateContainsUpper, false)     // nolint:errcheck
 	validate.RegisterValidation("lower", model.ValidateContainsLower, false)     // nolint:errcheck
 	validate.RegisterValidation("special", model.ValidateContainsSpecial, false) // nolint:errcheck
@@ -47,6 +47,7 @@ func main() {
 	db := postgres.New(cfg.Postgres)
 
 	service := service.New(
+		db,
 		db,
 		db,
 	)
@@ -81,4 +82,3 @@ func main() {
 		log.Error("error occured while shutting down the server: " + err.Error())
 	}
 }
-

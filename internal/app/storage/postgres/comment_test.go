@@ -421,9 +421,14 @@ func TestDeleteComment(t *testing.T) {
 			commentID: 1,
 			userID:    1,
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
 					WithArgs(1, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectExec("UPDATE posts SET comments_count = comments_count - 1 WHERE id = \\(SELECT post_id FROM comments WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
 			},
 			wantErr: false,
 			err:     nil,
@@ -433,13 +438,14 @@ func TestDeleteComment(t *testing.T) {
 			commentID: 1,
 			userID:    1,
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
 					WithArgs(1, 1).
 					WillReturnError(sql.ErrNoRows)
-
 				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
 					WithArgs(1).
 					WillReturnError(sql.ErrNoRows)
+				mock.ExpectRollback()
 			},
 			wantErr: true,
 			err:     st.ErrNotFound,
@@ -449,13 +455,14 @@ func TestDeleteComment(t *testing.T) {
 			commentID: 1,
 			userID:    1,
 			mock: func() {
+				mock.ExpectBegin()
 				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
 					WithArgs(1, 1).
 					WillReturnError(sql.ErrNoRows)
-
 				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectRollback()
 			},
 			wantErr: true,
 			err:     st.ErrNotAllowed,
