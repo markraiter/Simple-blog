@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/markraiter/simple-blog/internal/model"
@@ -20,6 +21,9 @@ func (m *MockCommentSaver) SaveComment(ctx context.Context, comment *model.Comme
 
 // Tests
 func TestCommentService_SaveComment(t *testing.T) {
+	const operation = "service.SaveComment"
+	var err = errors.New("error")
+
 	mockSaver := new(MockCommentSaver)
 	commentService := &CommentService{saver: mockSaver}
 
@@ -50,8 +54,8 @@ func TestCommentService_SaveComment(t *testing.T) {
 			},
 			userID:     0,
 			mockReturn: 0,
-			mockError:  errors.New("error"),
-			wantError:  errors.New("service.SaveComment: error"),
+			mockError:  err,
+			wantError:  fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 

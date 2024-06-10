@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/markraiter/simple-blog/internal/app/storage"
@@ -49,6 +50,9 @@ func (m *MockPostProcessor) DeletePost(ctx context.Context, postID, userID int) 
 
 // Tests
 func TestPostService_SavePost(t *testing.T) {
+	const operation = "service.SavePost"
+	var err = errors.New("error")
+
 	mockSaver := new(MockPostSaver)
 	postService := &PostService{saver: mockSaver}
 
@@ -79,8 +83,8 @@ func TestPostService_SavePost(t *testing.T) {
 			},
 			userID:     0,
 			mockReturn: 0,
-			mockError:  errors.New("error"),
-			wantError:  errors.New("service.SavePost: error"),
+			mockError:  err,
+			wantError:  fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -106,6 +110,9 @@ func TestPostService_SavePost(t *testing.T) {
 }
 
 func TestPostService_Post(t *testing.T) {
+	const operation = "service.Post"
+	var err = errors.New("error")
+
 	mockProvider := new(MockPostProvider)
 	postService := &PostService{provider: mockProvider}
 
@@ -139,7 +146,15 @@ func TestPostService_Post(t *testing.T) {
 			mockReturn:   nil,
 			mockError:    storage.ErrNotFound,
 			expectedPost: nil,
-			expectedErr:  ErrNotFound,
+			expectedErr:  fmt.Errorf("%s: %w", operation, ErrNotFound),
+		},
+		{
+			name:         "Error",
+			id:           3,
+			mockReturn:   nil,
+			mockError:    err,
+			expectedPost: nil,
+			expectedErr:  fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -150,8 +165,7 @@ func TestPostService_Post(t *testing.T) {
 			post, err := postService.Post(context.Background(), tt.id)
 
 			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.True(t, errors.Is(err, tt.expectedErr))
+				assert.EqualError(t, err, tt.expectedErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -163,11 +177,15 @@ func TestPostService_Post(t *testing.T) {
 }
 
 func TestPostService_Posts(t *testing.T) {
+	const operation = "service.Posts"
+	var err = errors.New("error")
+
 	mockProvider := new(MockPostProvider)
 	postService := &PostService{provider: mockProvider}
 
 	tests := []struct {
 		name          string
+		ctx           context.Context
 		mockReturn    []*model.Post
 		mockError     error
 		expectedPosts []*model.Post
@@ -175,6 +193,7 @@ func TestPostService_Posts(t *testing.T) {
 	}{
 		{
 			name: "Success",
+			ctx:  context.Background(),
 			mockReturn: []*model.Post{
 				{
 					ID:      1,
@@ -202,17 +221,24 @@ func TestPostService_Posts(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		{
+			name:          "Error",
+			ctx:           nil,
+			mockReturn:    nil,
+			mockError:     err,
+			expectedPosts: nil,
+			expectedErr:   fmt.Errorf("%s: %w", operation, err),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockProvider.On("Posts", mock.Anything).Return(tt.mockReturn, tt.mockError)
+			mockProvider.On("Posts", tt.ctx).Return(tt.mockReturn, tt.mockError)
 
-			posts, err := postService.Posts(context.Background())
+			posts, err := postService.Posts(tt.ctx)
 
 			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErr.Error())
+				assert.EqualError(t, err, tt.expectedErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -224,11 +250,15 @@ func TestPostService_Posts(t *testing.T) {
 }
 
 func TestPostService_UpdatePost(t *testing.T) {
+	const operation = "service.UpdatePost"
+	var err = errors.New("error")
+
 	mockProcessor := new(MockPostProcessor)
 	postService := &PostService{processor: mockProcessor}
 
 	tests := []struct {
 		name        string
+		ctx         context.Context
 		postID      int
 		userID      int
 		postReq     *model.PostRequest
@@ -237,6 +267,7 @@ func TestPostService_UpdatePost(t *testing.T) {
 	}{
 		{
 			name:   "Success",
+			ctx:    context.Background(),
 			postID: 1,
 			userID: 1,
 			postReq: &model.PostRequest{
@@ -248,6 +279,7 @@ func TestPostService_UpdatePost(t *testing.T) {
 		},
 		{
 			name:   "Post not found",
+			ctx:    context.Background(),
 			postID: 2,
 			userID: 1,
 			postReq: &model.PostRequest{
@@ -255,10 +287,11 @@ func TestPostService_UpdatePost(t *testing.T) {
 				Content: "Test Content",
 			},
 			mockError:   storage.ErrNotFound,
-			expectedErr: ErrNotFound,
+			expectedErr: fmt.Errorf("%s: %w", operation, ErrNotFound),
 		},
 		{
 			name:   "Not allowed",
+			ctx:    context.Background(),
 			postID: 1,
 			userID: 2,
 			postReq: &model.PostRequest{
@@ -266,21 +299,32 @@ func TestPostService_UpdatePost(t *testing.T) {
 				Content: "Test Content",
 			},
 			mockError:   storage.ErrNotAllowed,
-			expectedErr: ErrNotAllowed,
+			expectedErr: fmt.Errorf("%s: %w", operation, ErrNotAllowed),
+		},
+		{
+			name:   "Error",
+			ctx:    nil,
+			postID: 1,
+			userID: 1,
+			postReq: &model.PostRequest{
+				Title:   "Test Title",
+				Content: "Test Content",
+			},
+			mockError:   err,
+			expectedErr: fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockProcessor.On("UpdatePost", mock.Anything, mock.MatchedBy(func(post *model.Post) bool {
+			mockProcessor.On("UpdatePost", tt.ctx, mock.MatchedBy(func(post *model.Post) bool {
 				return post.ID == tt.postID && post.UserID == tt.userID
 			})).Return(tt.mockError)
 
-			err := postService.UpdatePost(context.Background(), tt.postID, tt.userID, tt.postReq)
+			err := postService.UpdatePost(tt.ctx, tt.postID, tt.userID, tt.postReq)
 
 			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.True(t, errors.Is(err, tt.expectedErr))
+				assert.EqualError(t, err, tt.expectedErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -291,11 +335,15 @@ func TestPostService_UpdatePost(t *testing.T) {
 }
 
 func TestPostService_DeletePost(t *testing.T) {
+	const operation = "service.DeletePost"
+	var err = errors.New("error")
+
 	mockProcessor := new(MockPostProcessor)
 	postService := &PostService{processor: mockProcessor}
 
 	tests := []struct {
 		name        string
+		ctx         context.Context
 		postID      int
 		userID      int
 		mockError   error
@@ -303,6 +351,7 @@ func TestPostService_DeletePost(t *testing.T) {
 	}{
 		{
 			name:        "Success",
+			ctx:         context.Background(),
 			postID:      1,
 			userID:      1,
 			mockError:   nil,
@@ -310,29 +359,38 @@ func TestPostService_DeletePost(t *testing.T) {
 		},
 		{
 			name:        "Post not found",
+			ctx:         context.Background(),
 			postID:      2,
 			userID:      1,
 			mockError:   storage.ErrNotFound,
-			expectedErr: ErrNotFound,
+			expectedErr: fmt.Errorf("%s: %w", operation, ErrNotFound),
 		},
 		{
 			name:        "Not allowed",
+			ctx:         context.Background(),
 			postID:      1,
 			userID:      2,
 			mockError:   storage.ErrNotAllowed,
-			expectedErr: ErrNotAllowed,
+			expectedErr: fmt.Errorf("%s: %w", operation, ErrNotAllowed),
+		},
+		{
+			name:        "Error",
+			ctx:         nil,
+			postID:      1,
+			userID:      1,
+			mockError:   err,
+			expectedErr: fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockProcessor.On("DeletePost", mock.Anything, tt.postID, tt.userID).Return(tt.mockError)
+			mockProcessor.On("DeletePost", tt.ctx, tt.postID, tt.userID).Return(tt.mockError)
 
-			err := postService.DeletePost(context.Background(), tt.postID, tt.userID)
+			err := postService.DeletePost(tt.ctx, tt.postID, tt.userID)
 
 			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.True(t, errors.Is(err, tt.expectedErr))
+				assert.EqualError(t, err, tt.expectedErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
