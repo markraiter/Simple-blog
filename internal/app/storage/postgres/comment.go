@@ -10,6 +10,9 @@ import (
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
+// SaveComment saves a new comment to the database and increments the comments_count of the post.
+//
+// If the post does not exist it returns storage.ErrNotFound.
 func (s *Storage) SaveComment(ctx context.Context, comment *model.Comment) (int, error) {
 	const operation = "storage.SaveComment"
 
@@ -40,6 +43,8 @@ func (s *Storage) SaveComment(ctx context.Context, comment *model.Comment) (int,
 }
 
 // Comment returns any comment by its ID.
+//
+// If the comment does not exist it returns storage.ErrNotFound.
 func (s *Storage) Comment(ctx context.Context, id int) (*model.Comment, error) {
 	const operation = "storage.Comment"
 
@@ -64,6 +69,8 @@ func (s *Storage) Comment(ctx context.Context, id int) (*model.Comment, error) {
 }
 
 // CommentsByPost returns all comments for provided post.
+//
+// If the post does not exist it returns storage.ErrNotFound.
 func (s *Storage) CommentsByPost(ctx context.Context, postID int) ([]*model.Comment, error) {
 	const operation = "storage.CommentsByPost"
 
@@ -100,7 +107,6 @@ func (s *Storage) CommentsByPost(ctx context.Context, postID int) ([]*model.Comm
 //
 // If the comment does not exist it returns storage.ErrNotFound.
 // If the user is not the author of the comment it returns storage.ErrNotAllowed.
-// If the post does not exist it returns storage.ErrNotFound.
 func (s *Storage) UpdateComment(ctx context.Context, comment *model.Comment) error {
 	const operation = "storage.UpdateComment"
 
@@ -132,35 +138,10 @@ func (s *Storage) UpdateComment(ctx context.Context, comment *model.Comment) err
 	return nil
 }
 
-// func (s *Storage) DeleteComment(ctx context.Context, commentID, userID int) error {
-// 	const operation = "storage.DeleteComment"
-
-// 	query := `
-//         DELETE FROM comments
-//         WHERE id = $1 AND user_id = $2
-//         RETURNING id
-//     `
-// 	var deletedCommentID int
-// 	err := s.PostgresDB.QueryRowContext(ctx, query, commentID, userID).Scan(&deletedCommentID)
-// 	if err != nil {
-// 		if errors.Is(err, sql.ErrNoRows) {
-// 			postExistsQuery := "SELECT id FROM comments WHERE id = $1"
-// 			var existsCommentID int
-// 			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, commentID).Scan(&existsCommentID)
-// 			if err != nil {
-// 				if errors.Is(err, sql.ErrNoRows) {
-// 					return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
-// 				}
-// 				return fmt.Errorf("%s: %w", operation, err)
-// 			}
-// 			return fmt.Errorf("%s: %w", operation, storage.ErrNotAllowed)
-// 		}
-// 		return fmt.Errorf("%s: %w", operation, err)
-// 	}
-
-// 	return nil
-// }
-
+// DeleteComment deletes a comment by its ID and decrements the comments_count of the post.
+//
+// If the comment does not exist it returns storage.ErrNotFound.
+// If the user is not the author of the comment it returns storage.ErrNotAllowed.
 func (s *Storage) DeleteComment(ctx context.Context, commentID, userID int) error {
 	const operation = "storage.DeleteComment"
 
