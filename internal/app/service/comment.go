@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/markraiter/simple-blog/internal/app/storage"
 	"github.com/markraiter/simple-blog/internal/model"
 )
 
@@ -12,8 +14,8 @@ type CommentSaver interface {
 }
 
 type CommentProvider interface {
-	// Comment(ctx context.Context, id int) (*model.Comment, error)
-	// CommentsByPost(ctx context.Context, postID int) ([]*model.Comment, error)
+	Comment(ctx context.Context, id int) (*model.Comment, error)
+	CommentsByPost(ctx context.Context, postID int) ([]*model.Comment, error)
 }
 
 type CommentProcessor interface {
@@ -45,13 +47,31 @@ func (s *CommentService) SaveComment(ctx context.Context, userID int, commentReq
 }
 
 func (s *CommentService) Comment(ctx context.Context, id int) (*model.Comment, error) {
-	// const operation = "service.Comment"
+	const operation = "service.Comment"
 
-	// comment, err := s.provider.Comment(ctx, id)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("%s: %w", operation, err)
-	// }
+	comment, err := s.provider.Comment(ctx, id)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, fmt.Errorf("%s: %w", operation, ErrNotFound)
+		}
 
-	// return comment, nil
-	return nil, nil
+		return nil, fmt.Errorf("%s: %w", operation, err)
+	}
+
+	return comment, nil
+}
+
+func (s *CommentService) CommentsByPost(ctx context.Context, postID int) ([]*model.Comment, error) {
+	const operation = "service.CommentsByPost"
+
+	comments, err := s.provider.CommentsByPost(ctx, postID)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, fmt.Errorf("%s: %w", operation, ErrNotFound)
+		}
+
+		return nil, fmt.Errorf("%s: %w", operation, err)
+	}
+
+	return comments, nil
 }
