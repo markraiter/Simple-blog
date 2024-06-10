@@ -90,11 +90,14 @@ func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
     `
 
 	var updatedPostID int
+
 	err := s.PostgresDB.QueryRowContext(ctx, query, post.Title, post.Content, post.ID, post.UserID).Scan(&updatedPostID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			postExistsQuery := "SELECT id FROM posts WHERE id = $1"
+
 			var existsPostID int
+
 			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, post.ID).Scan(&existsPostID)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
@@ -120,11 +123,14 @@ func (s *Storage) DeletePost(ctx context.Context, postID, userID int) error {
     `
 
 	var deletedPostID int
+
 	err := s.PostgresDB.QueryRowContext(ctx, query, postID, userID).Scan(&deletedPostID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			postExistsQuery := "SELECT id FROM posts WHERE id = $1"
+
 			var existsPostID int
+
 			err := s.PostgresDB.QueryRowContext(ctx, postExistsQuery, postID).Scan(&existsPostID)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
@@ -139,37 +145,3 @@ func (s *Storage) DeletePost(ctx context.Context, postID, userID int) error {
 
 	return nil
 }
-
-// func (s *Storage) UpdatePost(ctx context.Context, post *model.Post) error {
-// 	const operation = "storage.UpdatePost"
-//
-// 	query := "UPDATE posts SET title = $1, content = $2 WHERE id = $3"
-//
-// 	_, err := s.PostgresDB.Exec(query, post.Title, post.Content, post.ID)
-// 	if err != nil {
-// 		if errors.Is(err, sql.ErrNoRows) {
-// 			return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
-// 		}
-//
-// 		return fmt.Errorf("%s: %w", operation, err)
-// 	}
-//
-// 	return nil
-// }
-//
-// func (s *Storage) DeletePost(ctx context.Context, id int) error {
-// 	const operation = "storage.DeletePost"
-//
-// 	query := "DELETE FROM posts WHERE id = $1"
-//
-// 	_, err := s.PostgresDB.Exec(query, id)
-// 	if err != nil {
-// 		if errors.Is(err, sql.ErrNoRows) {
-// 			return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
-// 		}
-//
-// 		return fmt.Errorf("%s: %w", operation, err)
-// 	}
-//
-// 	return nil
-// }

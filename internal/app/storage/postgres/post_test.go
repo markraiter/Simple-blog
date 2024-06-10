@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -25,20 +26,26 @@ func prepareStorage(t *testing.T) (*Storage, sqlmock.Sqlmock, func()) {
 	return storage, mock, closeFunc
 }
 
-func TestSavePost(t *testing.T) {
+func TestPostStorage_SavePost(t *testing.T) {
+	const operation = "storage.SavePost"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
 	tests := []struct {
-		name    string
-		post    *model.Post
-		mock    func()
-		wantID  int
-		wantErr bool
-		err     error
+		name       string
+		ctx        context.Context
+		post       *model.Post
+		mock       func()
+		mockReturn int
+		mockError  error
+		wantID     int
+		wantErr    error
 	}{
 		{
 			name: "Success",
+			ctx:  context.Background(),
 			post: &model.Post{
 				Title:   "Test Title",
 				Content: "Test Content",
@@ -49,12 +56,13 @@ func TestSavePost(t *testing.T) {
 					WithArgs("Test Title", "Test Content", 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
-			wantID:  1,
-			wantErr: false,
-			err:     nil,
+			mockReturn: 1,
+			wantID:     1,
+			wantErr:    nil,
 		},
 		{
 			name: "Null value for userID",
+			ctx:  context.Background(),
 			post: &model.Post{
 				Title:   "Test Title",
 				Content: "Test Content",
@@ -64,12 +72,14 @@ func TestSavePost(t *testing.T) {
 					WithArgs("Test Title", "Test Content", 0).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantID:  0,
-			wantErr: true,
-			err:     sql.ErrNoRows,
+			mockReturn: 0,
+			mockError:  sql.ErrNoRows,
+			wantID:     0,
+			wantErr:    fmt.Errorf("%s: %w", operation, sql.ErrNoRows),
 		},
 		{
 			name: "Null value for title",
+			ctx:  context.Background(),
 			post: &model.Post{
 				Content: "Test Content",
 				UserID:  1,
@@ -79,12 +89,14 @@ func TestSavePost(t *testing.T) {
 					WithArgs("", "Test Content", 1).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantID:  0,
-			wantErr: true,
-			err:     sql.ErrNoRows,
+			mockReturn: 0,
+			mockError:  sql.ErrNoRows,
+			wantID:     0,
+			wantErr:    fmt.Errorf("%s: %w", operation, sql.ErrNoRows),
 		},
 		{
 			name: "Null value for content",
+			ctx:  context.Background(),
 			post: &model.Post{
 				Title:  "Test Title",
 				UserID: 1,
@@ -94,9 +106,28 @@ func TestSavePost(t *testing.T) {
 					WithArgs("Test Title", "", 1).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantID:  0,
-			wantErr: true,
-			err:     sql.ErrNoRows,
+			mockReturn: 0,
+			mockError:  sql.ErrNoRows,
+			wantID:     0,
+			wantErr:    fmt.Errorf("%s: %w", operation, sql.ErrNoRows),
+		},
+		{
+			name: "Error",
+			ctx:  nil,
+			post: &model.Post{
+				Title:   "Test Title",
+				Content: "Test Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("INSERT INTO posts").
+					WithArgs("Test Title", "Test Content", 1).
+					WillReturnError(err)
+			},
+			mockReturn: 0,
+			mockError:  err,
+			wantID:     0,
+			wantErr:    fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -104,17 +135,15 @@ func TestSavePost(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mock()
 
-			postID, err := storage.SavePost(context.Background(), tt.post)
+			_, err := storage.SavePost(context.Background(), tt.post)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("expected error: %v, got: %v", tt.err, err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantID, postID)
 			}
+
+			assert.Equal(t, tt.mockReturn, tt.wantID)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -123,17 +152,21 @@ func TestSavePost(t *testing.T) {
 	}
 }
 
-func TestPost(t *testing.T) {
+func TestPostStorage_Post(t *testing.T) {
+	const operation = "storage.Post"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
 	tests := []struct {
-		name     string
-		postID   int
-		mock     func()
-		wantPost *model.Post
-		wantErr  bool
-		err      error
+		name       string
+		postID     int
+		mock       func()
+		mockReturn *model.Post
+		mockErr    error
+		wantPost   *model.Post
+		wantErr    error
 	}{
 		{
 			name:   "Success",
@@ -145,6 +178,14 @@ func TestPost(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{"id", "title", "content", "user_id", "comments_count"}).
 						AddRow(1, "Test Title", "Test Content", 1, 0))
 			},
+			mockReturn: &model.Post{
+				ID:            1,
+				Title:         "Test Title",
+				Content:       "Test Content",
+				UserID:        1,
+				CommentsCount: 0,
+			},
+			mockErr: nil,
 			wantPost: &model.Post{
 				ID:            1,
 				Title:         "Test Title",
@@ -152,8 +193,7 @@ func TestPost(t *testing.T) {
 				UserID:        1,
 				CommentsCount: 0,
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name:   "Post not found",
@@ -164,27 +204,51 @@ func TestPost(t *testing.T) {
 					WithArgs(2).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantPost: nil,
-			wantErr:  true,
-			err:      st.ErrNotFound,
+			mockReturn: nil,
+			mockErr:    sql.ErrNoRows,
+			wantPost:   nil,
+			wantErr:    fmt.Errorf("%s: %w", operation, st.ErrNotFound),
+		},
+		{
+			name:   "Error",
+			postID: 1,
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, title, content, user_id, comments_count FROM posts WHERE id = \\$1").
+					ExpectQuery().
+					WithArgs(1).
+					WillReturnError(err)
+			},
+			mockReturn: nil,
+			mockErr:    err,
+			wantPost:   nil,
+			wantErr:    fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name:   "Prepare error",
+			postID: 1,
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, title, content, user_id, comments_count FROM posts WHERE id = \\$1").
+					WillReturnError(err)
+			},
+			mockReturn: nil,
+			mockErr:    err,
+			wantPost:   nil,
+			wantErr:    fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mock()
-			ctx := context.Background()
-			post, err := storage.Post(ctx, tt.postID)
+			_, err := storage.Post(context.Background(), tt.postID)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("expected error: %v, got: %v", tt.err, err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantPost, post)
 			}
+
+			assert.Equal(t, tt.mockReturn, tt.wantPost)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -193,16 +257,23 @@ func TestPost(t *testing.T) {
 	}
 }
 
-func TestPosts(t *testing.T) {
+func TestPostStorage_Posts(t *testing.T) {
+	const operation = "storage.Posts"
+	var (
+		err     = errors.New("error")
+		scanErr = errors.New("sql: Scan error")
+	)
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
 	tests := []struct {
-		name      string
-		mock      func()
-		wantPosts []*model.Post
-		wantErr   bool
-		err       error
+		name       string
+		mock       func()
+		mockReturn []*model.Post
+		mockErr    error
+		wantPosts  []*model.Post
+		wantErr    error
 	}{
 		{
 			name: "Success",
@@ -213,6 +284,23 @@ func TestPosts(t *testing.T) {
 						AddRow(1, "Test Title 1", "Test Content 1", 1, 0).
 						AddRow(2, "Test Title 2", "Test Content 2", 2, 0))
 			},
+			mockReturn: []*model.Post{
+				{
+					ID:            1,
+					Title:         "Test Title 1",
+					Content:       "Test Content 1",
+					UserID:        1,
+					CommentsCount: 0,
+				},
+				{
+					ID:            2,
+					Title:         "Test Title 2",
+					Content:       "Test Content 2",
+					UserID:        2,
+					CommentsCount: 0,
+				},
+			},
+			mockErr: nil,
 			wantPosts: []*model.Post{
 				{
 					ID:            1,
@@ -229,8 +317,7 @@ func TestPosts(t *testing.T) {
 					CommentsCount: 0,
 				},
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name: "No posts",
@@ -239,27 +326,63 @@ func TestPosts(t *testing.T) {
 					ExpectQuery().
 					WillReturnRows(sqlmock.NewRows([]string{"id", "title", "content", "user_id", "comments_count"}))
 			},
-			wantPosts: []*model.Post{},
-			wantErr:   false,
-			err:       nil,
+			mockReturn: []*model.Post{},
+			mockErr:    nil,
+			wantPosts:  []*model.Post{},
+			wantErr:    nil,
+		},
+		{
+			name: "Error",
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, title, content, user_id, comments_count FROM posts ORDER BY created_at DESC").
+					ExpectQuery().
+					WillReturnError(err)
+			},
+			mockReturn: nil,
+			mockErr:    err,
+			wantPosts:  nil,
+			wantErr:    fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "Prepare error",
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, title, content, user_id, comments_count FROM posts ORDER BY created_at DESC").
+					WillReturnError(err)
+			},
+			mockReturn: nil,
+			mockErr:    err,
+			wantPosts:  nil,
+			wantErr:    fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "Scan error",
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, title, content, user_id, comments_count FROM posts ORDER BY created_at DESC").
+					ExpectQuery().
+					WillReturnRows(sqlmock.NewRows([]string{"id", "title", "content", "user_id", "comments_count"}).
+						AddRow("invalid_id", "Test Title", "Test Content", 1, 0))
+			},
+			mockReturn: nil,
+			mockErr:    scanErr,
+			wantPosts:  nil,
+			wantErr:    fmt.Errorf("%s: %w", operation, scanErr),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mock()
-			ctx := context.Background()
-			posts, err := storage.Posts(ctx)
+			_, err := storage.Posts(context.Background())
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("expected error: %v, got: %v", tt.err, err)
-				}
+			if tt.wantErr != nil && tt.mockErr != scanErr {
+				assert.EqualError(t, err, tt.wantErr.Error())
+			} else if tt.mockErr == scanErr {
+				assert.ErrorContains(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantPosts, posts)
 			}
+
+			assert.Equal(t, tt.mockReturn, tt.wantPosts)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
