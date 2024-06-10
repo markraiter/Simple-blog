@@ -36,6 +36,18 @@ func (m *MockCommentProvider) CommentsByPost(ctx context.Context, postID int) ([
 	return args.Get(0).([]*model.Comment), args.Error(1)
 }
 
+type MockCommentProcessor struct{ mock.Mock }
+
+func (m *MockCommentProcessor) UpdateComment(ctx context.Context, comment *model.Comment) error {
+	args := m.Called(ctx, comment)
+	return args.Error(0)
+}
+
+func (m *MockCommentProcessor) DeleteComment(ctx context.Context, commentID, userID int) error {
+	args := m.Called(ctx, commentID, userID)
+	return args.Error(0)
+}
+
 // Tests
 func TestCommentService_SaveComment(t *testing.T) {
 	const operation = "service.SaveComment"
@@ -251,6 +263,157 @@ func TestCommentService_CommentsByPost(t *testing.T) {
 
 			assert.Equal(t, tt.mockReturn, tt.wantComments)
 			mockProvider.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCommentService_UpdateComment(t *testing.T) {
+	const operation = "service.UpdateComment"
+	var err = errors.New("error")
+
+	mockProcessor := new(MockCommentProcessor)
+	commentService := &CommentService{processor: mockProcessor}
+
+	tests := []struct {
+		name       string
+		ctx        context.Context
+		commentID  int
+		userID     int
+		commentReq *model.CommentRequest
+		mockError  error
+		wantError  error
+	}{
+		{
+			name:      "Success",
+			ctx:       context.Background(),
+			commentID: 1,
+			userID:    1,
+			commentReq: &model.CommentRequest{
+				Content: "Test Content",
+				PostID:  1,
+			},
+			mockError: nil,
+			wantError: nil,
+		},
+		{
+			name:      "Comment Not Found",
+			ctx:       context.Background(),
+			commentID: 2,
+			userID:    2,
+			commentReq: &model.CommentRequest{
+				Content: "Test Content",
+				PostID:  1,
+			},
+			mockError: storage.ErrNotFound,
+			wantError: fmt.Errorf("%s: %w", operation, ErrNotFound),
+		},
+		{
+			name:      "Not Allowed",
+			ctx:       context.Background(),
+			commentID: 1,
+			userID:    2,
+			commentReq: &model.CommentRequest{
+				Content: "Test Content",
+				PostID:  1,
+			},
+			mockError: storage.ErrNotAllowed,
+			wantError: fmt.Errorf("%s: %w", operation, ErrNotAllowed),
+		},
+		{
+			name:      "Error",
+			ctx:       nil,
+			commentID: 1,
+			userID:    1,
+			commentReq: &model.CommentRequest{
+				Content: "Test Content",
+				PostID:  1,
+			},
+			mockError: err,
+			wantError: fmt.Errorf("%s: %w", operation, err),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockProcessor.On("UpdateComment", tt.ctx, mock.MatchedBy(func(comment *model.Comment) bool {
+				return comment.ID == tt.commentID && comment.PostID == tt.commentReq.PostID && comment.UserID == tt.userID
+			})).Return(tt.mockError)
+
+			err := commentService.UpdateComment(tt.ctx, tt.commentID, tt.userID, tt.commentReq)
+
+			if tt.wantError != nil {
+				assert.EqualError(t, err, tt.wantError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			mockProcessor.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCommentService_DeleteComment(t *testing.T) {
+	const operation = "service.DeleteComment"
+	var err = errors.New("error")
+
+	mockProcessor := new(MockCommentProcessor)
+	commentService := &CommentService{processor: mockProcessor}
+
+	tests := []struct {
+		name      string
+		ctx       context.Context
+		commentID int
+		userID    int
+		mockError error
+		wantError error
+	}{
+		{
+			name:      "Success",
+			ctx:       context.Background(),
+			commentID: 1,
+			userID:    1,
+			mockError: nil,
+			wantError: nil,
+		},
+		{
+			name:      "Comment Not Found",
+			ctx:       context.Background(),
+			commentID: 2,
+			userID:    1,
+			mockError: storage.ErrNotFound,
+			wantError: fmt.Errorf("%s: %w", operation, ErrNotFound),
+		},
+		{
+			name:      "User Not Alowed",
+			ctx:       context.Background(),
+			commentID: 1,
+			userID:    2,
+			mockError: storage.ErrNotAllowed,
+			wantError: fmt.Errorf("%s: %w", operation, ErrNotAllowed),
+		},
+		{
+			name:      "Error",
+			ctx:       nil,
+			commentID: 1,
+			userID:    1,
+			mockError: err,
+			wantError: fmt.Errorf("%s: %w", operation, err),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockProcessor.On("DeleteComment", tt.ctx, tt.commentID, tt.userID).Return(tt.mockError)
+
+			err := commentService.DeleteComment(tt.ctx, tt.commentID, tt.userID)
+
+			if tt.wantError != nil {
+				assert.EqualError(t, err, tt.wantError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			mockProcessor.AssertExpectations(t)
 		})
 	}
 }
