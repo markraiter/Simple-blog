@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -12,7 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSaveComment(t *testing.T) {
+func TestCommentStorage_SaveComment(t *testing.T) {
+	const operation = "storage.SaveComment"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
@@ -21,8 +25,7 @@ func TestSaveComment(t *testing.T) {
 		comment *model.Comment
 		mock    func()
 		wantID  int
-		wantErr bool
-		err     error
+		wantErr error
 	}{
 		{
 			name: "Success",
@@ -42,8 +45,7 @@ func TestSaveComment(t *testing.T) {
 				mock.ExpectCommit()
 			},
 			wantID:  1,
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name: "Null value for user_id",
@@ -59,8 +61,7 @@ func TestSaveComment(t *testing.T) {
 				mock.ExpectRollback()
 			},
 			wantID:  0,
-			wantErr: true,
-			err:     sql.ErrNoRows,
+			wantErr: fmt.Errorf("%s: %w", operation, sql.ErrNoRows),
 		},
 		{
 			name: "Null value for post_id",
@@ -76,8 +77,7 @@ func TestSaveComment(t *testing.T) {
 				mock.ExpectRollback()
 			},
 			wantID:  0,
-			wantErr: true,
-			err:     sql.ErrNoRows,
+			wantErr: fmt.Errorf("%s: %w", operation, sql.ErrNoRows),
 		},
 		{
 			name: "Null value for content",
@@ -93,8 +93,77 @@ func TestSaveComment(t *testing.T) {
 				mock.ExpectRollback()
 			},
 			wantID:  0,
-			wantErr: true,
-			err:     sql.ErrNoRows,
+			wantErr: fmt.Errorf("%s: %w", operation, sql.ErrNoRows),
+		},
+		{
+			name: "Error",
+			comment: &model.Comment{
+				Content: "content",
+				PostID:  1,
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("INSERT INTO comments").
+					WithArgs("content", 1, 1).
+					WillReturnError(err)
+				mock.ExpectRollback()
+			},
+			wantID:  0,
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "Error on update",
+			comment: &model.Comment{
+				Content: "content",
+				PostID:  1,
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("INSERT INTO comments").
+					WithArgs("content", 1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectExec("UPDATE posts SET comments_count = comments_count \\+ 1 WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(err)
+				mock.ExpectRollback()
+			},
+			wantID:  0,
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "Error on commit",
+			comment: &model.Comment{
+				Content: "content",
+				PostID:  1,
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("INSERT INTO comments").
+					WithArgs("content", 1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectExec("UPDATE posts SET comments_count = comments_count \\+ 1 WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit().WillReturnError(err)
+			},
+			wantID:  0,
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "Error on begin",
+			comment: &model.Comment{
+				Content: "content",
+				PostID:  1,
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectBegin().WillReturnError(err)
+			},
+			wantID:  0,
+			wantErr: fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -104,15 +173,13 @@ func TestSaveComment(t *testing.T) {
 
 			commentID, err := storage.SaveComment(context.Background(), tt.comment)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("error = %v, wantErr %v", err, tt.err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantID, commentID)
 			}
+
+			assert.Equal(t, tt.wantID, commentID)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -121,7 +188,10 @@ func TestSaveComment(t *testing.T) {
 	}
 }
 
-func TestComment(t *testing.T) {
+func TestCommentStorage_Comment(t *testing.T) {
+	const operation = "storage.Comment"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
@@ -130,8 +200,7 @@ func TestComment(t *testing.T) {
 		commentID   int
 		mock        func()
 		wantComment *model.Comment
-		wantErr     bool
-		err         error
+		wantErr     error
 	}{
 		{
 			name:      "Success",
@@ -149,8 +218,7 @@ func TestComment(t *testing.T) {
 				PostID:  1,
 				UserID:  1,
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name:      "Comment not found",
@@ -162,8 +230,28 @@ func TestComment(t *testing.T) {
 					WillReturnError(sql.ErrNoRows)
 			},
 			wantComment: nil,
-			wantErr:     true,
-			err:         st.ErrNotFound,
+			wantErr:     fmt.Errorf("%s: %w", operation, st.ErrNotFound),
+		},
+		{
+			name:      "Error",
+			commentID: 1,
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, content, post_id, user_id FROM comments WHERE id = \\$1").
+					ExpectQuery().
+					WithArgs(1).
+					WillReturnError(err)
+			},
+			wantComment: nil,
+			wantErr:     fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "Error on prepare",
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, content, post_id, user_id FROM comments WHERE id = \\$1").
+					WillReturnError(err)
+			},
+			wantComment: nil,
+			wantErr:     fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -174,15 +262,13 @@ func TestComment(t *testing.T) {
 
 			comment, err := storage.Comment(ctx, tt.commentID)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("error = %v, wantErr %v", err, tt.err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantComment, comment)
 			}
+
+			assert.Equal(t, tt.wantComment, comment)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -191,7 +277,11 @@ func TestComment(t *testing.T) {
 	}
 }
 
-func TestCommentsByPost(t *testing.T) {
+func TestCommentStorage_CommentsByPost(t *testing.T) {
+	const operation = "storage.CommentsByPost"
+	var err = errors.New("error")
+	var scanErr = errors.New("scan error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
@@ -200,8 +290,7 @@ func TestCommentsByPost(t *testing.T) {
 		postID       int
 		mock         func()
 		wantComments []*model.Comment
-		wantErr      bool
-		err          error
+		wantErr      error
 	}{
 		{
 			name:   "Success",
@@ -228,8 +317,7 @@ func TestCommentsByPost(t *testing.T) {
 					UserID:  1,
 				},
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name:   "No comments found",
@@ -241,8 +329,7 @@ func TestCommentsByPost(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{"id", "content", "post_id", "user_id"}))
 			},
 			wantComments: []*model.Comment{},
-			wantErr:      false,
-			err:          nil,
+			wantErr:      nil,
 		},
 		{
 			name:   "No post found",
@@ -254,8 +341,7 @@ func TestCommentsByPost(t *testing.T) {
 					WillReturnError(sql.ErrNoRows)
 			},
 			wantComments: nil,
-			wantErr:      true,
-			err:          st.ErrNotFound,
+			wantErr:      fmt.Errorf("%s: %w", operation, st.ErrNotFound),
 		},
 		{
 			name:   "No postID",
@@ -267,8 +353,43 @@ func TestCommentsByPost(t *testing.T) {
 					WillReturnError(sql.ErrNoRows)
 			},
 			wantComments: nil,
-			wantErr:      true,
-			err:          st.ErrNotFound,
+			wantErr:      fmt.Errorf("%s: %w", operation, st.ErrNotFound),
+		},
+		{
+			name:   "Error",
+			postID: 1,
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, content, post_id, user_id FROM comments WHERE post_id = \\$1 ORDER BY created_at DESC").
+					ExpectQuery().
+					WithArgs(1).
+					WillReturnError(err)
+			},
+			wantComments: nil,
+			wantErr:      fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "Error on prepare",
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, content, post_id, user_id FROM comments WHERE post_id = \\$1 ORDER BY created_at DESC").
+					WillReturnError(err)
+			},
+			wantComments: nil,
+			wantErr:      fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name:   "Error on scan",
+			postID: 1,
+			mock: func() {
+				mock.ExpectPrepare("SELECT id, content, post_id, user_id FROM comments WHERE post_id = \\$1 ORDER BY created_at DESC").
+					ExpectQuery().
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "content", "post_id", "user_id"}).
+						AddRow("1", "Test Content", 1, 1).
+						AddRow(2, "Test Content 2", 1, 1)).
+					WillReturnError(scanErr)
+			},
+			wantComments: nil,
+			wantErr:      fmt.Errorf("%s: %w", operation, scanErr),
 		},
 	}
 
@@ -279,15 +400,13 @@ func TestCommentsByPost(t *testing.T) {
 
 			comments, err := storage.CommentsByPost(ctx, tt.postID)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("error = %v, wantErr %v", err, tt.err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantComments, comments)
 			}
+
+			assert.Equal(t, tt.wantComments, comments)
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
