@@ -415,7 +415,10 @@ func TestCommentStorage_CommentsByPost(t *testing.T) {
 	}
 }
 
-func TestUpdateComment(t *testing.T) {
+func TestCommentStorage_UpdateComment(t *testing.T) {
+	const operation = "storage.UpdateComment"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
@@ -423,8 +426,7 @@ func TestUpdateComment(t *testing.T) {
 		name    string
 		comment *model.Comment
 		mock    func()
-		wantErr bool
-		err     error
+		wantErr error
 	}{
 		{
 			name: "Success",
@@ -438,8 +440,7 @@ func TestUpdateComment(t *testing.T) {
 					WithArgs("Updated Content", 1, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name: "Comment not found",
@@ -457,8 +458,7 @@ func TestUpdateComment(t *testing.T) {
 					WithArgs(1).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantErr: true,
-			err:     st.ErrNotFound,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotFound),
 		},
 		{
 			name: "Post not found",
@@ -476,8 +476,7 @@ func TestUpdateComment(t *testing.T) {
 					WithArgs(1).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantErr: true,
-			err:     st.ErrNotFound,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotFound),
 		},
 		{
 			name: "User not allowed",
@@ -495,8 +494,39 @@ func TestUpdateComment(t *testing.T) {
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
-			wantErr: true,
-			err:     st.ErrNotAllowed,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotAllowed),
+		},
+		{
+			name: "Error",
+			comment: &model.Comment{
+				ID:      1,
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE comments SET content = \\$1 WHERE id = \\$2 AND user_id = \\$3 RETURNING id").
+					WithArgs("Updated Content", 1, 1).
+					WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "QueryRawContext error",
+			comment: &model.Comment{
+				ID:      1,
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE comments SET content = \\$1 WHERE id = \\$2 AND user_id = \\$3 RETURNING id").
+					WithArgs("Updated Content", 1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -507,11 +537,8 @@ func TestUpdateComment(t *testing.T) {
 
 			err := storage.UpdateComment(ctx, tt.comment)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("error = %v, wantErr %v", err, tt.err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -524,6 +551,9 @@ func TestUpdateComment(t *testing.T) {
 }
 
 func TestDeleteComment(t *testing.T) {
+	const operation = "storage.DeleteComment"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
@@ -532,8 +562,7 @@ func TestDeleteComment(t *testing.T) {
 		commentID int
 		userID    int
 		mock      func()
-		wantErr   bool
-		err       error
+		wantErr   error
 	}{
 		{
 			name:      "Success",
@@ -549,8 +578,7 @@ func TestDeleteComment(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectCommit()
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name:      "Comment not found",
@@ -566,8 +594,7 @@ func TestDeleteComment(t *testing.T) {
 					WillReturnError(sql.ErrNoRows)
 				mock.ExpectRollback()
 			},
-			wantErr: true,
-			err:     st.ErrNotFound,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotFound),
 		},
 		{
 			name:      "User not allowed",
@@ -583,8 +610,77 @@ func TestDeleteComment(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 				mock.ExpectRollback()
 			},
-			wantErr: true,
-			err:     st.ErrNotAllowed,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotAllowed),
+		},
+		{
+			name:      "Error",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnError(err)
+				mock.ExpectRollback()
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name:      "Error on commit",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectExec("UPDATE posts SET comments_count = comments_count - 1 WHERE id = \\(SELECT post_id FROM comments WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit().WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name:      "Error on begin",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectBegin().WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name:      "Error QueryRawContext",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery("SELECT id FROM comments WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(err)
+				mock.ExpectRollback()
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name:      "Error ExecContext",
+			commentID: 1,
+			userID:    1,
+			mock: func() {
+				mock.ExpectBegin()
+				mock.ExpectQuery("DELETE FROM comments WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				mock.ExpectExec("UPDATE posts SET comments_count = comments_count - 1 WHERE id = \\(SELECT post_id FROM comments WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnError(err)
+				mock.ExpectRollback()
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -595,11 +691,8 @@ func TestDeleteComment(t *testing.T) {
 
 			err := storage.DeleteComment(ctx, tt.commentID, tt.userID)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("error = %v, wantErr %v", err, tt.err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
