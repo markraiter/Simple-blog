@@ -391,7 +391,10 @@ func TestPostStorage_Posts(t *testing.T) {
 	}
 }
 
-func TestUpdatePost(t *testing.T) {
+func TestPostStorage_UpdatePost(t *testing.T) {
+	const operation = "storage.UpdatePost"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
@@ -399,8 +402,7 @@ func TestUpdatePost(t *testing.T) {
 		name    string
 		post    *model.Post
 		mock    func()
-		wantErr bool
-		err     error
+		wantErr error
 	}{
 		{
 			name: "Success",
@@ -415,8 +417,7 @@ func TestUpdatePost(t *testing.T) {
 					WithArgs("Updated Title", "Updated Content", 1, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name: "Post Not Found",
@@ -435,8 +436,7 @@ func TestUpdatePost(t *testing.T) {
 					WithArgs(2).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantErr: true,
-			err:     st.ErrNotFound,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotFound),
 		},
 		{
 			name: "User Not Allowed",
@@ -455,8 +455,41 @@ func TestUpdatePost(t *testing.T) {
 					WithArgs(3).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(3))
 			},
-			wantErr: true,
-			err:     st.ErrNotAllowed,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotAllowed),
+		},
+		{
+			name: "Error",
+			post: &model.Post{
+				ID:      1,
+				Title:   "Updated Title",
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE posts SET title = \\$1, content = \\$2 WHERE id = \\$3 AND user_id = \\$4 RETURNING id").
+					WithArgs("Updated Title", "Updated Content", 1, 1).
+					WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name: "QueryRawContext error",
+			post: &model.Post{
+				ID:      1,
+				Title:   "Updated Title",
+				Content: "Updated Content",
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("UPDATE posts SET title = \\$1, content = \\$2 WHERE id = \\$3 AND user_id = \\$4 RETURNING id").
+					WithArgs("Updated Title", "Updated Content", 1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM posts WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -466,11 +499,8 @@ func TestUpdatePost(t *testing.T) {
 			ctx := context.Background()
 			err := storage.UpdatePost(ctx, tt.post)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("expected error: %v, got: %v", tt.err, err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -482,7 +512,10 @@ func TestUpdatePost(t *testing.T) {
 	}
 }
 
-func TestDeletePost(t *testing.T) {
+func TestPostStorage_DeletePost(t *testing.T) {
+	const operation = "storage.DeletePost"
+	var err = errors.New("error")
+
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
 
@@ -491,8 +524,7 @@ func TestDeletePost(t *testing.T) {
 		postID  int
 		userID  int
 		mock    func()
-		wantErr bool
-		err     error
+		wantErr error
 	}{
 		{
 			name:   "Success",
@@ -503,8 +535,7 @@ func TestDeletePost(t *testing.T) {
 					WithArgs(1, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
-			wantErr: false,
-			err:     nil,
+			wantErr: nil,
 		},
 		{
 			name:   "Post Not Found",
@@ -519,8 +550,7 @@ func TestDeletePost(t *testing.T) {
 					WithArgs(2).
 					WillReturnError(sql.ErrNoRows)
 			},
-			wantErr: true,
-			err:     st.ErrNotFound,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotFound),
 		},
 		{
 			name:   "User Not Allowed",
@@ -535,8 +565,33 @@ func TestDeletePost(t *testing.T) {
 					WithArgs(3).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(3))
 			},
-			wantErr: true,
-			err:     st.ErrNotAllowed,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrNotAllowed),
+		},
+		{
+			name:   "Error",
+			postID: 1,
+			userID: 1,
+			mock: func() {
+				mock.ExpectQuery("DELETE FROM posts WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
+		},
+		{
+			name:   "QueryRawContext error",
+			postID: 1,
+			userID: 1,
+			mock: func() {
+				mock.ExpectQuery("DELETE FROM posts WHERE id = \\$1 AND user_id = \\$2 RETURNING id").
+					WithArgs(1, 1).
+					WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectQuery("SELECT id FROM posts WHERE id = \\$1").
+					WithArgs(1).
+					WillReturnError(err)
+			},
+			wantErr: fmt.Errorf("%s: %w", operation, err),
 		},
 	}
 
@@ -546,11 +601,8 @@ func TestDeletePost(t *testing.T) {
 			ctx := context.Background()
 			err := storage.DeletePost(ctx, tt.postID, tt.userID)
 
-			if tt.wantErr {
-				assert.Error(t, err)
-				if !errors.Is(err, tt.err) {
-					t.Errorf("expected error: %v, got: %v", tt.err, err)
-				}
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
