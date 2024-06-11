@@ -280,7 +280,7 @@ func TestCommentStorage_Comment(t *testing.T) {
 func TestCommentStorage_CommentsByPost(t *testing.T) {
 	const operation = "storage.CommentsByPost"
 	var err = errors.New("error")
-	var scanErr = errors.New("scan error")
+	var scanErr = errors.New("sql: Scan error")
 
 	storage, mock, closeDB := prepareStorage(t)
 	defer closeDB()
@@ -384,9 +384,7 @@ func TestCommentStorage_CommentsByPost(t *testing.T) {
 					ExpectQuery().
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "content", "post_id", "user_id"}).
-						AddRow("1", "Test Content", 1, 1).
-						AddRow(2, "Test Content 2", 1, 1)).
-					WillReturnError(scanErr)
+						AddRow("invalid_id", "Test Content", 1, 1))
 			},
 			wantComments: nil,
 			wantErr:      fmt.Errorf("%s: %w", operation, scanErr),
@@ -400,8 +398,10 @@ func TestCommentStorage_CommentsByPost(t *testing.T) {
 
 			comments, err := storage.CommentsByPost(ctx, tt.postID)
 
-			if tt.wantErr != nil {
+			if tt.wantErr != nil && tt.name != "Error on scan" {
 				assert.EqualError(t, err, tt.wantErr.Error())
+			} else if tt.name == "Error on scan" {
+				assert.ErrorContains(t, err, tt.wantErr.Error())
 			} else {
 				assert.NoError(t, err)
 			}
