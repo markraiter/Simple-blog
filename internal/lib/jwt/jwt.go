@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrTypeAssert            = errors.New("type assertion failed")
+	ErrInvalidClaims         = errors.New("invalid claims")
 	ErrInvalidSigningMethod  = errors.New("invalid signing method")
 	ErrInvalidToken          = errors.New("invalid token")
 	ErrTokenExpired          = errors.New("token expired")
@@ -35,7 +35,7 @@ func NewToken(cfg config.Auth, user *model.User, duration time.Duration) (string
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", ErrTypeAssert
+		return "", ErrInvalidClaims
 	}
 
 	claims["uid"] = user.ID
