@@ -21,10 +21,15 @@ type PostService interface {
 	PostProcessor
 }
 
+type CommentService interface {
+	CommentSaver
+}
+
 type Handler struct {
 	Healthcheck
 	AuthHandler
 	PostHandler
+	CommentHandler
 }
 
 // The response struct is used to send a message back to the client.
@@ -37,6 +42,7 @@ func New(
 	v *validator.Validate,
 	a AuthService,
 	p PostService,
+	c CommentService,
 ) *Handler {
 	return &Handler{
 		Healthcheck{log: l},
@@ -51,6 +57,13 @@ func New(
 			saver:     p,
 			provider:  p,
 			processor: p,
+		},
+		CommentHandler{
+			log:       l,
+			validate:  v,
+			saver:     c,
+			provider:  nil,
+			processor: nil,
 		},
 	}
 }
@@ -70,18 +83,18 @@ func (h *Handler) Router(ctx context.Context, cfg config.Config, log *slog.Logge
 	{
 		m.Handle("POST /api/posts", basicAuth(h.CreatePost(ctx)))
 		m.Handle("GET /api/posts", h.Posts(ctx))
-        m.Handle("GET /api/posts/{id}", h.Post(ctx))
+		m.Handle("GET /api/posts/{id}", h.Post(ctx))
 		m.Handle("PUT /api/posts/{id}", basicAuth(h.UpdatePost(ctx)))
-		m.Handle("DELETE /api/posts/{id}",basicAuth(h.DeletePost(ctx)))
+		m.Handle("DELETE /api/posts/{id}", basicAuth(h.DeletePost(ctx)))
 	}
 
-    {
-        // m.Handle("POST /api/comments", basicAuth(h.CreateComment(ctx)))
-        // m.Handle("GET /api/comments", h.Comments(ctx))
-        // m.Handle("GET /api/comments/{id}", h.Comment(ctx))
-        // m.Handle("PUT /api/comments/{id}", basicAuth(h.UpdateComment(ctx)))
-        // m.Handle("DELETE /api/comments/{id}", basicAuth(h.DeleteComment(ctx)))
-    }
+	{
+		m.Handle("POST /api/comments", basicAuth(h.CreateComment(ctx)))
+		// m.Handle("GET /api/comments", h.Comments(ctx))
+		// m.Handle("GET /api/comments/{id}", h.Comment(ctx))
+		// m.Handle("PUT /api/comments/{id}", basicAuth(h.UpdateComment(ctx)))
+		// m.Handle("DELETE /api/comments/{id}", basicAuth(h.DeleteComment(ctx)))
+	}
 
 	return m
 }

@@ -48,15 +48,15 @@ type PostHandler struct {
 // @Failure 400 {string} string "Invalid request"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/posts [post]
-func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
+func (h *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		const operation = "handler.CreatePost"
 
-		log := ph.log.With(slog.String("operation", operation))
+		log := h.log.With(slog.String("operation", operation))
 
 		var postReq model.PostRequest
-        userID := middleware.GetUserIDFromCtx(r.Context())
+		userID := middleware.GetUserIDFromCtx(r.Context())
 
 		if err := json.NewDecoder(r.Body).Decode(&postReq); err != nil {
 			log.Warn("error parsing request", sl.Err(err))
@@ -65,14 +65,14 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		if err := ph.validate.Struct(postReq); err != nil {
+		if err := h.validate.Struct(postReq); err != nil {
 			log.Warn("error validating post", sl.Err(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		id, err := ph.saver.SavePost(ctx, userID, &postReq)
+		id, err := h.saver.SavePost(ctx, userID, &postReq)
 		if err != nil {
 			log.Error("error saving post", sl.Err(err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -81,8 +81,8 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-        w.Header().Set("Content-Type", "application/json")
-        w.Write([]byte(strconv.Itoa(id))) //nolint:errcheck
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(strconv.Itoa(id))) //nolint:errcheck
 	}
 }
 
@@ -96,53 +96,53 @@ func (ph *PostHandler) CreatePost(ctx context.Context) http.HandlerFunc {
 // @Failure 400 {string} string "Invalid request"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/posts/{id} [get]
-func (ph *PostHandler) Post(ctx context.Context) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        const operation = "handler.GetPost"
+func (h *PostHandler) Post(ctx context.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const operation = "handler.GetPost"
 
-        log := ph.log.With(slog.String("operation", operation))
+		log := h.log.With(slog.String("operation", operation))
 
-        idStr := r.URL.Query().Get("id")
-        if idStr == "" {
-            log.Warn("error getting id from query")
-            http.Error(w, "error getting id from query", http.StatusBadRequest)
+		idStr := r.URL.Query().Get("id")
+		if idStr == "" {
+			log.Warn("error getting id from query")
+			http.Error(w, "error getting id from query", http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        id, err := strconv.Atoi(idStr)
-        if err != nil {
-            log.Warn("error parsing id", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusBadRequest)
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			log.Warn("error parsing id", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        post, err := ph.provider.Post(ctx, id)
-        if err != nil {
-            if errors.Is(err, service.ErrNotFound) {
-                log.Warn("post not found", sl.Err(err))
-                http.Error(w, err.Error(), http.StatusNotFound)
+		post, err := h.provider.Post(ctx, id)
+		if err != nil {
+			if errors.Is(err, service.ErrNotFound) {
+				log.Warn("post not found", sl.Err(err))
+				http.Error(w, err.Error(), http.StatusNotFound)
 
-                return
-            }
+				return
+			}
 
-            log.Error("error getting post", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Error("error getting post", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
-            return
-        }
+			return
+		}
 
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 
-        if err := json.NewEncoder(w).Encode(post); err != nil {
-            log.Error("error encoding post", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err := json.NewEncoder(w).Encode(post); err != nil {
+			log.Error("error encoding post", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
-            return
-        }
-    }
+			return
+		}
+	}
 }
 
 // @Summary Get Posts
@@ -153,30 +153,30 @@ func (ph *PostHandler) Post(ctx context.Context) http.HandlerFunc {
 // @Success 200 {array} model.Post
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/posts [get]
-func (ph *PostHandler) Posts(ctx context.Context) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        const operation = "handler.GetPosts"
+func (h *PostHandler) Posts(ctx context.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const operation = "handler.GetPosts"
 
-        log := ph.log.With(slog.String("operation", operation))
+		log := h.log.With(slog.String("operation", operation))
 
-        posts, err := ph.provider.Posts(ctx)
-        if err != nil {
-            log.Error("error getting posts", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+		posts, err := h.provider.Posts(ctx)
+		if err != nil {
+			log.Error("error getting posts", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
-            return
-        }
+			return
+		}
 
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 
-        if err := json.NewEncoder(w).Encode(posts); err != nil {
-            log.Error("error encoding posts", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err := json.NewEncoder(w).Encode(posts); err != nil {
+			log.Error("error encoding posts", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
-            return
-        }
-    }
+			return
+		}
+	}
 }
 
 // @Summary Update a post
@@ -193,71 +193,71 @@ func (ph *PostHandler) Posts(ctx context.Context) http.HandlerFunc {
 // @Failure 404 {string} string "Post not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/posts/{id} [put]
-func (ph *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        const operation = "handler.UpdatePost"
+func (h *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const operation = "handler.UpdatePost"
 
-        log := ph.log.With(slog.String("operation", operation))
+		log := h.log.With(slog.String("operation", operation))
 
-        userID := middleware.GetUserIDFromCtx(r.Context())
+		userID := middleware.GetUserIDFromCtx(r.Context())
 
-        postIDStr := r.URL.Query().Get("id")
-        if postIDStr == "" {
-            log.Warn("error getting id from query")
-            http.Error(w, "error getting id from query", http.StatusBadRequest)
+		postIDStr := r.URL.Query().Get("id")
+		if postIDStr == "" {
+			log.Warn("error getting id from query")
+			http.Error(w, "error getting id from query", http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        postID, err := strconv.Atoi(postIDStr)
-        if err != nil {
-            log.Warn("error parsing id", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusBadRequest)
+		postID, err := strconv.Atoi(postIDStr)
+		if err != nil {
+			log.Warn("error parsing id", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        var postReq model.PostRequest
-        if err := json.NewDecoder(r.Body).Decode(&postReq); err != nil {
-            log.Warn("error parsing request", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusBadRequest)
+		var postReq model.PostRequest
+		if err := json.NewDecoder(r.Body).Decode(&postReq); err != nil {
+			log.Warn("error parsing request", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        if err := ph.validate.Struct(postReq); err != nil {
-            log.Warn("error validating post", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusBadRequest)
+		if err := h.validate.Struct(postReq); err != nil {
+			log.Warn("error validating post", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        err = ph.processor.UpdatePost(ctx, postID, userID, &postReq)
-        if err != nil {
-            if errors.Is(err, service.ErrNotAllowed) {
-                log.Warn("user is not allowed to perform this operation", sl.Err(err))
-                http.Error(w, err.Error(), http.StatusForbidden)
+		err = h.processor.UpdatePost(ctx, postID, userID, &postReq)
+		if err != nil {
+			if errors.Is(err, service.ErrNotAllowed) {
+				log.Warn("user is not allowed to perform this operation", sl.Err(err))
+				http.Error(w, err.Error(), http.StatusForbidden)
 
-                return
-            }
+				return
+			}
 
-            if errors.Is(err, service.ErrNotFound) {
-                log.Warn("post not found", sl.Err(err))
-                http.Error(w, err.Error(), http.StatusNotFound)
+			if errors.Is(err, service.ErrNotFound) {
+				log.Warn("post not found", sl.Err(err))
+				http.Error(w, err.Error(), http.StatusNotFound)
 
-                return
-            }
+				return
+			}
 
-            log.Error("error updating post", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Error("error updating post", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
-            return
-        }
+			return
+		}
 
-        w.WriteHeader(http.StatusOK)
-        w.Header().Set("Content-Type", "application/json")
-        w.Write([]byte("Post updated")) //nolint:errcheck
-    }
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("Post updated")) //nolint:errcheck
+	}
 }
 
 // @Summary Delete a Post
@@ -274,53 +274,53 @@ func (ph *PostHandler) UpdatePost(ctx context.Context) http.HandlerFunc {
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/posts/{id} [delete]
 func (hp *PostHandler) DeletePost(ctx context.Context) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        const operation = "handler.DeletePost"
+	return func(w http.ResponseWriter, r *http.Request) {
+		const operation = "handler.DeletePost"
 
-        log := hp.log.With(slog.String("operation", operation))
+		log := hp.log.With(slog.String("operation", operation))
 
-        userID := middleware.GetUserIDFromCtx(r.Context())
+		userID := middleware.GetUserIDFromCtx(r.Context())
 
-        idStr := r.URL.Query().Get("id")
-        if idStr == "" {
-            log.Warn("error getting id from query")
-            http.Error(w, "error getting id from query", http.StatusBadRequest)
+		idStr := r.URL.Query().Get("id")
+		if idStr == "" {
+			log.Warn("error getting id from query")
+			http.Error(w, "error getting id from query", http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        postID, err := strconv.Atoi(idStr)
-        if err != nil {
-            log.Warn("error parsing id", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusBadRequest)
+		postID, err := strconv.Atoi(idStr)
+		if err != nil {
+			log.Warn("error parsing id", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
 
-            return
-        }
+			return
+		}
 
-        err = hp.processor.DeletePost(ctx, postID, userID)
-        if err != nil {
-            if errors.Is(err, service.ErrNotAllowed) {
-                log.Warn("user is not allowed to perform this operation", sl.Err(err))
-                http.Error(w, err.Error(), http.StatusForbidden)
+		err = hp.processor.DeletePost(ctx, postID, userID)
+		if err != nil {
+			if errors.Is(err, service.ErrNotAllowed) {
+				log.Warn("user is not allowed to perform this operation", sl.Err(err))
+				http.Error(w, err.Error(), http.StatusForbidden)
 
-                return
-            }
+				return
+			}
 
-            if errors.Is(err, service.ErrNotFound) {
-                log.Warn("post not found", sl.Err(err))
-                http.Error(w, err.Error(), http.StatusNotFound)
+			if errors.Is(err, service.ErrNotFound) {
+				log.Warn("post not found", sl.Err(err))
+				http.Error(w, err.Error(), http.StatusNotFound)
 
-                return
-            }
+				return
+			}
 
-            log.Error("error deleting post", sl.Err(err))
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Error("error deleting post", sl.Err(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 
-            return
-        }
+			return
+		}
 
-        w.WriteHeader(http.StatusOK)
-        w.Header().Set("Content-Type", "application/json")
-        w.Write([]byte("Post deleted")) //nolint:errcheck
-    }
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("Post deleted")) //nolint:errcheck
+	}
 }

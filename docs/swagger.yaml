@@ -5,6 +5,19 @@ definitions:
       message:
         type: string
     type: object
+  model.CommentRequest:
+    properties:
+      content:
+        example: lorem ipsum dolor sit amet ...
+        minLength: 3
+        type: string
+      post_id:
+        example: 1
+        type: integer
+    required:
+    - content
+    - post_id
+    type: object
   model.LoginRequest:
     properties:
       email:
@@ -145,6 +158,38 @@ paths:
       summary: Register user
       tags:
       - auth
+  /api/comments:
+    post:
+      consumes:
+      - application/json
+      description: Create a comment
+      parameters:
+      - description: Comment object that needs to be created
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/model.CommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Comment created
+          schema:
+            type: string
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create a comment
+      tags:
+      - comments
   /api/posts:
     get:
       consumes:

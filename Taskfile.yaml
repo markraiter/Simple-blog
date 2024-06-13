@@ -38,5 +38,7 @@ tasks:
       - rm coverage.out coverage.html
 
   swaginit:
+    aliases:
+      - sw
     cmds:
       - swag init --outputTypes go,yaml -g cmd/main.go internal/model

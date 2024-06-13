@@ -145,3 +145,18 @@ func (s *Storage) DeletePost(ctx context.Context, postID, userID int) error {
 
 	return nil
 }
+
+func (s *Storage) postExists(ctx context.Context, postID int) (bool, error) {
+	const operation = "storage.postExists"
+
+	query := "SELECT EXISTS (SELECT 1 FROM posts WHERE id = $1)"
+
+	var exists bool
+
+	err := s.PostgresDB.QueryRowContext(ctx, query, postID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", operation, err)
+	}
+
+	return exists, nil
+}

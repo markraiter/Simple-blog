@@ -40,6 +40,10 @@ func (s *CommentService) SaveComment(ctx context.Context, userID int, commentReq
 
 	id, err := s.saver.SaveComment(ctx, &commentModel)
 	if err != nil {
+		if errors.Is(err, storage.ErrPostNotExists) {
+			return 0, fmt.Errorf("%s: %w", operation, ErrPostNotExists)
+		}
+
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
 

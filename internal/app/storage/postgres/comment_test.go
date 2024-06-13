@@ -35,6 +35,9 @@ func TestCommentStorage_SaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 1).
@@ -48,31 +51,33 @@ func TestCommentStorage_SaveComment(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "Post does not exist",
+			comment: &model.Comment{
+				Content: "content",
+				PostID:  2,
+				UserID:  1,
+			},
+			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			},
+			wantID:  0,
+			wantErr: fmt.Errorf("%s: %w", operation, st.ErrPostNotExists),
+		},
+		{
 			name: "Null value for user_id",
 			comment: &model.Comment{
 				Content: "content",
 				PostID:  1,
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 0).
-					WillReturnError(sql.ErrNoRows)
-				mock.ExpectRollback()
-			},
-			wantID:  0,
-			wantErr: fmt.Errorf("%s: %w", operation, sql.ErrNoRows),
-		},
-		{
-			name: "Null value for post_id",
-			comment: &model.Comment{
-				Content: "content",
-				UserID:  1,
-			},
-			mock: func() {
-				mock.ExpectBegin()
-				mock.ExpectQuery("INSERT INTO comments").
-					WithArgs("content", 0, 1).
 					WillReturnError(sql.ErrNoRows)
 				mock.ExpectRollback()
 			},
@@ -86,6 +91,9 @@ func TestCommentStorage_SaveComment(t *testing.T) {
 				UserID: 1,
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("", 1, 1).
@@ -103,6 +111,9 @@ func TestCommentStorage_SaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 1).
@@ -120,6 +131,9 @@ func TestCommentStorage_SaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 1).
@@ -140,6 +154,9 @@ func TestCommentStorage_SaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 				mock.ExpectBegin()
 				mock.ExpectQuery("INSERT INTO comments").
 					WithArgs("content", 1, 1).
@@ -160,6 +177,9 @@ func TestCommentStorage_SaveComment(t *testing.T) {
 				UserID:  1,
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT EXISTS \\(SELECT 1 FROM posts WHERE id = \\$1\\)").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 				mock.ExpectBegin().WillReturnError(err)
 			},
 			wantID:  0,

@@ -16,6 +16,15 @@ import (
 func (s *Storage) SaveComment(ctx context.Context, comment *model.Comment) (int, error) {
 	const operation = "storage.SaveComment"
 
+	postExists, err := s.postExists(ctx, comment.PostID)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", operation, err)
+	}
+
+	if !postExists {
+		return 0, fmt.Errorf("%s: %w", operation, storage.ErrPostNotExists)
+	}
+
 	tx, err := s.PostgresDB.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", operation, err)

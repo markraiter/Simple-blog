@@ -57,6 +57,7 @@ func main() {
 		validate,
 		&service.AuthService,
 		&service.PostService,
+		&service.CommentService,
 	)
 
 	server := api.New(log)

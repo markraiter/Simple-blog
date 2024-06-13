@@ -9,6 +9,7 @@ var (
 	ErrNotFound           = errors.New("not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrNotAllowed         = errors.New("user is not allowed to perform this operation")
+	ErrPostNotExists      = errors.New("post with such ID does not exist")
 )
 
 type AuthStorage interface {
