@@ -17,7 +17,7 @@ This is a simple-blog application with jwt authentication and CRUD operations fo
 ### Running the tests
 
 1. Run the tests with `task test`
-2. Also you can proceed with the [OpenAPI](https://swagger.io/) docs by link `localhost:8888/swagger`
+2. Also you can proceed with the [OpenAPI](https://swagger.io/) docs by link `localhost:8080/swagger`
 
 ### Built With
 
